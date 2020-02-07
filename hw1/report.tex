@@ -1,0 +1,1031 @@
+\documentclass{article}
+
+\usepackage{enumitem}
+\setenumerate[1]{itemsep = 1pt , partopsep = 1pt , parsep = \parskip , topsep = 1pt}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{xeCJK}
+\setCJKmainfont[AutoFakeBold = 2.5 , AutoFakeSlant = 0.4]{cwTeXKai}
+\newcommand{\parallelsum}{\mathbin{\!/\mkern-5mu/\!}}
+
+\title{Machine Learning - Homework 1}
+\author{資工四 B05902023 李澤諺}
+\date{October 11, 2019}
+
+\begin{document}
+
+\maketitle
+
+\noindent
+{\bf \LARGE Part 1. Programming Problem}\\
+
+\noindent
+請實做以下兩種不同feature的模型，回答第(1)、(2)題：
+\begin{enumerate}
+    \item[1.] 抽全部9小時內的污染源feature當作一次項(加bias)。
+    \item[2.] 抽全部9小時內pm2.5的一次項當作feature (加bias)。
+\end{enumerate}
+備註：
+\begin{enumerate}
+    \item[a.] NR請皆設為0，其他的非數值(特殊字元)可以自己判斷。
+    \item[b.] 所有advanced的gradient descent技術(如：adam、adagrad等)都是可
+    以用的。
+    \item[c.] 第1、2題請都以題目給訂的兩種model來回答。
+    \item[d.] 同學可以先把model訓練好，Kaggle死線之後便可以無限上傳。
+    \item[e.] 根據助教時間的公式表示，(1)代表 $p = 9 \times 18 + 1$ 而(2)代表 $p = 9 \times 1 + 1$。\\
+\end{enumerate}
+
+\noindent
+{\bf 1. (1\%)記錄誤差值(RMSE) (根據Kaggle public + private 分數)，討論兩種feature的影響。}\\
+
+以下表格為data未經過preprocessing，並隨機選出500筆作為validation data，剩下的則作為training data，再使用助教所提供的minibatch函
+式(除了epoch改為20以外，其餘hyper-parameter皆不變)，於不同的 feature下所得到的RMSE：
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|c|}
+        \hline
+        \multirow{2}*{Feature} & \multirow{2}*{Train} & \multirow{2}*{Validation} & \multicolumn{2}{|c|}{Test}\\
+        \cline{4-5}
+        & & & Public & Private\\
+        \hline
+        $9 \times 18 + 1$ & 29.33821 & 26.03703 & 6.13045 & 5.67994\\
+        \hline
+        $9 \times 1 + 1$ & 29.53493 & 26.70052 & 6.44198 & 6.30330\\
+        \hline
+    \end{tabular}
+\end{center}
+
+兩種feature的RMSE皆偏高，除了data未經過preprocessing之外，推測可能的原因如下：$9 \times 1 + 1$ 個feature的RMSE偏高可能的原因為feature的數目太少，model不
+夠複雜，使得最終所得到的linear function和真正的target function相去甚遠所致，而 $9 \times 18 + 1$ 個feature的RMSE偏高可能的原因為feature的數目太多，使得model太過於複雜，導致了overfit。由此可見，除了data preprocessing之外，feature太多或太少，也皆有可能對performance造成不好的影響。\\
+
+\noindent
+{\bf 2. (1\%)解釋什麼樣的data preprocessing可以improve你的training/testing
+accuracy，ex. 你怎麼挑掉你覺得不適合的data points。請提供數據(RMSE)以
+佐證你的想法。}\\
+
+以下表格中，我隨機選出500筆data作為validation data，剩餘的則作為training data，並使用助教所提供的minibatch函式(除了epoch改為20以外，其餘hyper-parameter皆不變)，以此進行linear regression並得出RMSE。
+
+首先，由於發現feature太多或太少皆會使得performance變差，因此計算18個汙染源和 PM2.5之間的相關係數如下：
+
+\begin{center}
+    \begin{tabular}{|c|c|}
+        \hline
+        汙染源 & 汙染源和PM2.5之間的相關係數\\
+        \hline
+        AMB\_TEMP & 0.0448153729810179\\
+        \hline
+        CH4 & 0.05516971926973672\\
+        \hline
+        CO & 0.09862870734664024\\
+        \hline
+        NMHC & 0.026935172142996976\\
+        \hline
+        NO & 0.01748232654065935\\
+        \hline
+        NO2 & 0.09256064805699277\\
+        \hline
+        NOx & 0.06491192107671398\\
+        \hline
+        O3 & 0.0829880050037244\\
+        \hline
+        PM10 & 0.19017378762178272\\
+        \hline
+        PM2.5 & 1.0\\
+        \hline
+        RAINFALL & -0.020700122410982087\\
+        \hline
+        RH & -0.041557665426046025\\
+        \hline
+        SO2 & 0.1191309514421674\\
+        \hline
+        THC & 0.04756004805889075\\
+        \hline
+        WD\_HR & 0.06979431138986333\\
+        \hline
+        WIND\_DIREC & 0.06346516798906802\\
+        \hline
+        WIND\_SPEED & -0.01990944931047016\\
+        \hline
+        WS\_HR & -0.03520712489750443\\
+        \hline
+    \end{tabular}
+\end{center}
+
+最後選取了相關係數較高的6個汙染源(CO、NO2、O3、PM10、PM2.5、SO2)，用 $9 \times 6 + 1$ 個feature進行linear
+regression，所得到的RMSE如下：
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \multirow{2}*{Train} & \multirow{2}*{Validation} & \multicolumn{2}{|c|}{Test}\\
+        \cline{3-4}
+        & & Public & Private\\
+        \hline
+        29.32333 & 24.94036 & 6.04361 & 5.62738\\
+        \hline
+    \end{tabular}
+\end{center}
+
+事實上RMSE並沒有多大的進步。接著，在觀察了training data後，發現data中含有許多異常值，推斷其為造成RMSE偏高的主要原因，因此在經由人
+工判斷後，我將不滿足以下條件的data point視為異常值：
+
+\begin{center}
+    \begin{tabular}{|c|c|}
+        \hline
+        汙染源 & 合理數值範圍\\
+        \hline
+        CO & $x \ge 0$\\
+        \hline
+        NO2 & $x \ge 0$\\
+        \hline
+        O3 & $x \ge 0$\\
+        \hline
+        PM10 & $0 \le x \le 250$\\
+        \hline
+        PM2.5 & $0 \le x \le100$\\
+        \hline
+        SO2 & $0 \le x \le 100$\\
+        \hline
+    \end{tabular}
+\end{center}
+
+在training data中，我將異常的data point直接丟棄，而在testing data中，則是在發現異常的汙染源數值後，便去尋找該汙染源前一個與下一個正常的數
+值，將兩者取平均後，取代該時間點異常的數值。在將data中的異常值去除或插值取代後，所得到的RMSE如下：
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \multirow{2}*{Train} & \multirow{2}*{Validation} & \multicolumn{2}{|c|}{Test}\\
+        \cline{3-4}
+        & & Public & Private\\
+        \hline
+        4.63518 & 4.62928 & 5.63850 & 5.46249\\
+        \hline
+    \end{tabular}
+\end{center}
+
+RMSE大幅改進，由此可以推斷異常值為造成RMSE居高不下的最主要原因。以上即為我所做的所有preprocessing。\\[12pt]
+
+\noindent
+{\bf \LARGE Part 2. Math Problem}\\
+
+\noindent
+{\bf \Large 1. Closed-Form Linear Regression Solution}\\
+
+In the lecture, we've learnt how to solve linear regression problem via gradient descent. Here you will derive the closed-form solution for such kind of problems.\\
+
+In the following questions, unless otherwise specified, we denote $S = \{(x_i, y_i)\}^N_{i = 1}$ as a dataset of $N$ input-output pairs, where $x_i \in {\mathbb R}^k$ denotes the vectorial input and $y_i \in {\mathbb R}$ denotes the corresponding scalar output.\\
+
+\noindent
+{\bf 1-(a)}\\
+
+Let's begin with a specific dataset
+\begin{align*}
+    S = \{(x_i, y_i)\}^5_{i = 1} = \{(1, 1.2), (2, 2.4), (3, 3.5), (4, 4.1), (5, 5.6)\}
+\end{align*}
+
+Please find the linear regression model $(w, b) \in {\mathbb R} \times {\mathbb R}$ that minimizes the sum of squares loss
+\begin{align*}
+    L_{ssq}(w, b) = \frac{1}{2 \times 5} \sum_{i = 1}^5 (y_i − (w^T x_i + b))^2
+\end{align*}
+
+\noindent
+{\bf 1-(b)}\\
+
+Please find the linear regression model $(w, b) \in {\mathbb R}^k \times {\mathbb R}$ that minimizes the sum of squares loss
+\begin{align*}
+    L_{ssq}(w, b) = \frac{1}{2 \times N} \sum_{i = 1}^N (y_i − (w^T x_i + b))^2
+\end{align*}
+
+\noindent
+{\bf 1-(c)}\\
+
+A key motivation for regularization is to avoid overfitting. A common choice is to add a L2-regularization term into the original loss function
+\begin{align*}
+    L_{reg}(w, b) = \frac{1}{2 \times N} \sum_{i = 1}^N (y_i − (w^T x_i + b))^2 + \frac{\lambda}{2} \| w \|^2
+\end{align*}
+where $\lambda \ge 0$ and for $w = [w_1\ w_2\ \cdots\ w_k]^T$, one denotes $\| w \|^2 = w^2_1 + \cdots + w^2_k$.\\
+
+Please find the linear regression model $(w, b)$ that minimizes the aforementioned regularized sum of squares loss.\\
+
+\noindent
+{\bf \large solution}\\
+
+\noindent
+{\bf 1-(a)}\\
+
+\noindent
+因為
+\begin{align*}
+    L_{ssq}(w, x) &= \frac{1}{10}\sum_{i = 1}^{5} (y_i - (wx_i + b))^2\\
+    &= \frac{1}{10}((w + b - 1.2)^2 + (2w + b - 2.4)^2 + (3w + b - 3.5)^2 +\\
+    &\ \ \ \ \ \ \ \ \ (4w + b - 4.1)^2 + (5w + b - 5.6)^2)
+\end{align*}
+所以
+\begin{align*}
+    \frac{\partial}{\partial w}L_{ssq} &= \frac{1}{10}(2(w + b - 1.2) \cdot 1 + 2(2w + b - 2.4) \cdot 2 + 2(3w + b - 3.5) \cdot 3\ +\\
+    &\ \ \ \ \ \ \ \ \ 2(4w + b - 4.1) \cdot 4 + 2(5w + b - 5.6) \cdot 5)\\
+    &= 11w + 3b - 12.18\\
+    \frac{\partial}{\partial b}L_{ssq} &= \frac{1}{10}(2(w + b - 1.2) \cdot 1 + 2(2w + b - 2.4) \cdot 1 + 2(3w + b - 3.5) \cdot 1\ +\\
+    &\ \ \ \ \ \ \ \ \ 2(4w + b - 4.1) \cdot 1 + 2(5w + b - 5.6) \cdot 1)\\
+    &= 3w + b - 3.36
+\end{align*}
+令
+\begin{align}
+    \frac{\partial}{\partial w} L_{ssq} &= 11w + 3b - 12.18 = 0\\
+    \frac{\partial}{\partial b} L_{ssq} &= 3w + b - 3.36 = 0
+\end{align}
+則有
+\begin{align*}
+    (1) - 3 \cdot (2) :\ &2w - 2.1 = 0,\ w = 1.05\\
+    11 \cdot (2) - 3 \cdot (1) :\ &2b - 0.42 = 0,\ b = 0.21
+\end{align*}
+故 $(w, b) = (1.05, 0.21)$ 為 $L_{ssq}$ 的一個critical point。$\ \square$\\
+
+\noindent
+{\bf 1-(b)}\\
+
+\noindent
+令
+\begin{align*}
+    {\bf w} = 
+    \left(
+    \begin{array}{c}
+        w_1\\
+        w_2\\
+        w_3\\
+        \vdots\\
+        w_K
+    \end{array}
+    \right)
+    \in {\mathbb R}^K,\ 
+    {\bf w}^\prime =
+    \left(
+    \begin{array}{c}
+        w_0^\prime\\
+        w_1^\prime\\
+        w_2^\prime\\
+        \vdots\\
+        w_K^\prime
+    \end{array}
+    \right) =
+    \left(
+    \begin{array}{c}
+        b\\
+        w_1\\
+        w_2\\
+        \vdots\\
+        w_K
+    \end{array}
+    \right)
+    \in {\mathbb R}^{K + 1}
+\end{align*}
+\begin{align*}
+    {\bf x}_i =
+    \left(
+    \begin{array}{c}
+        x_{i1}\\
+        x_{i2}\\
+        x_{i3}\\
+        \vdots\\
+        x_{iK}
+    \end{array}
+    \right)
+    \in {\mathbb R}^K,\ 
+    {\bf x}_i^\prime =
+    \left(
+    \begin{array}{c}
+        x_{i0}^\prime\\
+        x_{i1}^\prime\\
+        x_{i2}^\prime\\
+        \vdots\\
+        x_{iK}^\prime
+    \end{array}
+    \right) =
+    \left(
+    \begin{array}{c}
+        1\\
+        x_{i1}\\
+        x_{i2}\\
+        \vdots\\
+        x_{iK}
+    \end{array}
+    \right)
+    \in {\mathbb R}^{K + 1}
+\end{align*}
+\begin{align*}
+    X =
+    \left(
+    \begin{array}{c}
+        {\bf x}_1^{\prime T}\\
+        {\bf x}_2^{\prime T}\\
+        {\bf x}_3^{\prime T}\\
+        \vdots\\
+        {\bf x}_N^{\prime T}\\
+    \end{array}
+    \right) =
+    \left(
+    \begin{array}{ccccc}
+        x_{10}^\prime & x_{11}^\prime & x_{12}^\prime & \cdots & x_{1K}^\prime\\
+        x_{20}^\prime & x_{21}^\prime & x_{22}^\prime & \cdots & x_{2K}^\prime\\
+        x_{30}^\prime & x_{31}^\prime & x_{32}^\prime & \cdots & x_{3K}^\prime\\
+        \vdots & \vdots & \vdots & \ & \vdots\\
+        x_{N0}^\prime & x_{N1}^\prime & x_{N2}^\prime & \cdots & x_{NK}^\prime
+    \end{array}
+    \right)
+    \in {\mathbb R}^{N \times (K + 1)}
+\end{align*}
+\begin{align*}
+    {\bf y} =
+    \left(
+    \begin{array}{c}
+        y_1\\
+        y_2\\
+        y_3\\
+        \vdots\\
+        y_N
+    \end{array}
+    \right)
+    \in {\mathbb R}^N
+\end{align*}
+因為
+\begin{align*}
+    {\bf w}^T{\bf x}_i + b &= \sum_{j = 1}^{K} w_j x_{ij} + b \cdot 1 = \sum_{j = 1}^{K} w_j^\prime x_{ij}^\prime + w_0^\prime x_{i0}^\prime = \sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime
+\end{align*}
+所以
+\begin{align*}
+    L_{ssq} &= \frac{1}{2N} \sum_{i = 1}^{N} (y_i - ({\bf w}^T {\bf x}_i + b))^2\\
+    &= \frac{1}{2N} \sum_{i = 1}^{N} (y_i - \sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime)^2\\
+    &= \frac{1}{2N} \sum_{i = 1}^{N} (\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)^2\\
+\end{align*}
+所以
+\begin{align*}
+    \frac{\partial}{\partial w_n^\prime} L_{ssq} &= \frac{\partial}{\partial w_n^\prime} (\frac{1}{2N} \sum_{i = 1}^{N} (\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)^2)\\
+    &= \frac{1}{2N} \sum_{i = 1}^{N} (2(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i) \cdot x_{in}^\prime)\\
+    &= \frac{1}{N} \sum_{i = 1}^{N} (x_{in}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i))
+\end{align*}
+令
+\begin{align*}
+    &\left(
+    \begin{array}{c}
+        \frac{\partial}{\partial w_0^\prime} L_{ssq}\\
+        \frac{\partial}{\partial w_1^\prime} L_{ssq}\\
+        \frac{\partial}{\partial w_2^\prime} L_{ssq}\\
+        \vdots\\
+        \frac{\partial}{\partial w_K^\prime} L_{ssq} 
+    \end{array}
+    \right)
+    = 0\\
+    \Leftrightarrow
+    &\left(
+    \begin{array}{c}
+        \frac{1}{N} \sum_{i = 1}^{N} (x_{i0}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i))\\
+        \frac{1}{N} \sum_{i = 1}^{N} (x_{i1}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i))\\
+        \frac{1}{N} \sum_{i = 1}^{N} (x_{i2}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i))\\
+        \vdots\\
+        \frac{1}{N} \sum_{i = 1}^{N} (x_{iK}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i))
+    \end{array}
+    \right)
+    = 0\\
+    \Leftrightarrow
+    &\ \frac{1}{N} \left(
+    \begin{array}{ccccc}
+        x_{10}^\prime & x_{20}^\prime & x_{30}^\prime & \cdots & x_{N0}^\prime\\
+        x_{11}^\prime & x_{21}^\prime & x_{31}^\prime & \cdots & x_{N1}^\prime\\
+        x_{12}^\prime & x_{22}^\prime & x_{32}^\prime & \cdots & x_{N2}^\prime\\
+        \vdots & \vdots & \vdots & \  & \vdots\\
+        x_{1K}^\prime & x_{2K}^\prime & x_{3K}^\prime & \cdots & x_{NK}^\prime
+    \end{array}
+    \right)
+    \cdot \\
+    &\left(
+    \left(
+    \begin{array}{ccccc}
+        x_{10}^\prime & x_{11}^\prime & x_{12}^\prime & \cdots & x_{1K}^\prime\\
+        x_{20}^\prime & x_{21}^\prime & x_{22}^\prime & \cdots & x_{2K}^\prime\\
+        x_{30}^\prime & x_{31}^\prime & x_{32}^\prime & \cdots & x_{3K}^\prime\\
+        \vdots & \vdots & \vdots & \ & \vdots\\
+        x_{N0}^\prime & x_{N1}^\prime & x_{N2}^\prime & \cdots & x_{NK}^\prime
+    \end{array}
+    \right)
+    \left(
+    \begin{array}{c}
+        w_0^\prime\\
+        w_1^\prime\\
+        w_2^\prime\\
+        \vdots\\
+        w_K^\prime
+    \end{array}
+    \right)
+    -
+    \left(
+    \begin{array}{c}
+        y_1^\prime\\
+        y_2^\prime\\
+        y_3^\prime\\
+        \vdots\\
+        y_N^\prime
+    \end{array}
+    \right)
+    \right)
+    = 0\\
+    \Leftrightarrow\ &X^T(X{\bf w}^\prime - {\bf y}) = 0\\
+    \Leftrightarrow\ &X^T X {\bf w}^\prime = X^T {\bf y}
+\end{align*}
+若 $X^T X$ 為invertible，則有 ${\bf w}^\prime = (X^T X)^{-1} X^T {\bf y} = X^\dagger {\bf y}$。\\
+若 $X^T X$ 不為invertible，則可取 ${\bf w}^\prime = X^\dagger {\bf y}$，其為normal equation\\
+$X^T X {\bf w}^\prime = X^T {\bf y}$ 的最佳解之一。\\
+綜合以上所述，可得
+\begin{align*}
+    \left(
+    \begin{array}{c}
+        b\\
+        w_1\\
+        w_2\\
+        \vdots\\
+        w_K
+    \end{array}
+    \right)
+    = {\bf w}^\prime = X^\dagger {\bf y} = 
+    \left(
+    \begin{array}{cc}
+        1 & {\bf x}_1^T\\
+        1 & {\bf x}_2^T\\
+        1 & {\bf x}_3^T\\
+        \vdots & \vdots\\
+        1 & {\bf x}_N^T
+    \end{array}
+    \right)^\dagger {\bf y}
+\end{align*}
+為 $L_{ssq}$ 的一個critical point。$\ \square$\\
+
+\noindent
+{\bf 1-(c)}\\
+
+\noindent
+符號沿用自{\bf 1-(b)}。\\
+由{\bf 1-(b)}可知
+\begin{align*}
+    {\bf w}^T{\bf x}_i + b = \sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime
+\end{align*}
+而
+\begin{align*}
+    \lVert {\bf w} \rVert ^2 = \sum_{i = 1}^{K} w_i^2 = \sum_{i = 1}^{K} w_i^{\prime 2} = \sum_{i = 0}^{K} w_{i}^{\prime 2} - w_0^{\prime 2} = \sum_{i = 0}^{K} w_i^{\prime 2} - b^2
+\end{align*}
+所以
+\begin{align*}
+    L_{reg} &= \frac{1}{2N} \sum_{i = 1}^{N} (y_i - ({\bf w}^T {\bf x}_i + b))^2 + \frac{\lambda}{2} \lVert w \rVert ^2\\
+    &= \frac{1}{2N} \sum_{i = 1}^{N} (y_i - \sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime)^2 + \frac{\lambda}{2} (\sum_{i = 0}^{K} w_i^{\prime 2} - b^2)\\
+    &= \frac{1}{2N} \sum_{i = 1}^{N} (\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)^2 + \frac{\lambda}{2} (\sum_{i = 0}^{K} w_i^{\prime 2} - b^2)
+\end{align*}
+所以
+\begin{align*}
+    \frac{\partial}{\partial w_n^\prime} L_{reg} &= \frac{\partial}{\partial w_n^\prime} (\frac{1}{2N} \sum_{i = 1}^{N} (\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)^2 + \frac{\lambda}{2} (\sum_{i = 0}^{K} w_i^{\prime 2} - b^2))\\
+    &= \frac{1}{2N} \sum_{i = 1}^{N} (2(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i) \cdot x_{in}^\prime) + \frac{\lambda}{2} \cdot 2w_n^\prime\\
+    &= \frac{1}{N} \sum_{i = 1}^{N} (x_{in}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)) + \lambda w_n^\prime
+\end{align*}
+令
+\begin{align*}
+    &\left(
+    \begin{array}{c}
+        \frac{\partial}{\partial w_0^\prime} L_{reg}\\
+        \frac{\partial}{\partial w_1^\prime} L_{reg}\\
+        \frac{\partial}{\partial w_2^\prime} L_{reg}\\
+        \vdots\\
+        \frac{\partial}{\partial w_K^\prime} L_{reg} 
+    \end{array}
+    \right)
+    = 0\\
+    \Leftrightarrow
+    &\left(
+    \begin{array}{c}
+        \frac{1}{N} \sum_{i = 1}^{N} (x_{i0}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)) + \lambda w_0^\prime\\
+        \frac{1}{N} \sum_{i = 1}^{N} (x_{i1}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)) + \lambda w_1^\prime\\
+        \frac{1}{N} \sum_{i = 1}^{N} (x_{i2}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)) + \lambda w_2^\prime\\
+        \vdots\\
+        \frac{1}{N} \sum_{i = 1}^{N} (x_{iK}^\prime(\sum_{j = 0}^{K} w_j^\prime x_{ij}^\prime - y_i)) + \lambda w_K^\prime
+    \end{array}
+    \right)
+    = 0\\
+    \Leftrightarrow\ 
+    &\frac{1}{N} \left(
+    \begin{array}{ccccc}
+        x_{10}^\prime & x_{20}^\prime & x_{30}^\prime & \cdots & x_{N0}^\prime\\
+        x_{11}^\prime & x_{21}^\prime & x_{31}^\prime & \cdots & x_{N1}^\prime\\
+        x_{12}^\prime & x_{22}^\prime & x_{32}^\prime & \cdots & x_{N2}^\prime\\
+        \vdots & \vdots & \vdots & \  & \vdots\\
+        x_{1K}^\prime & x_{2K}^\prime & x_{3K}^\prime & \cdots & x_{NK}^\prime
+    \end{array}
+    \right)
+    \cdot \\
+    &\left(
+    \left(
+    \begin{array}{ccccc}
+        x_{10}^\prime & x_{11}^\prime & x_{12}^\prime & \cdots & x_{1K}^\prime\\
+        x_{20}^\prime & x_{21}^\prime & x_{22}^\prime & \cdots & x_{2K}^\prime\\
+        x_{30}^\prime & x_{31}^\prime & x_{32}^\prime & \cdots & x_{3K}^\prime\\
+        \vdots & \vdots & \vdots & \ & \vdots\\
+        x_{N0}^\prime & x_{N1}^\prime & x_{N2}^\prime & \cdots & x_{NK}^\prime
+    \end{array}
+    \right)
+    \left(
+    \begin{array}{c}
+        w_0^\prime\\
+        w_1^\prime\\
+        w_2^\prime\\
+        \vdots\\
+        w_K^\prime
+    \end{array}
+    \right)
+    -
+    \left(
+    \begin{array}{c}
+        y_1^\prime\\
+        y_2^\prime\\
+        y_3^\prime\\
+        \vdots\\
+        y_N^\prime
+    \end{array}
+    \right)
+    \right)
+    + \lambda
+    \left(
+    \begin{array}{c}
+        w_0^\prime\\
+        w_1^\prime\\
+        w_2^\prime\\
+        \vdots\\
+        w_K^\prime
+    \end{array}
+    \right)
+    = 0\\
+    \Leftrightarrow\ &\frac{1}{N} (X^T (X {\bf w}^\prime - {\bf y})) + \lambda {\bf w}^\prime = 0\\
+    \Leftrightarrow\ &(X^T X + N \lambda I_{K + 1}) {\bf w}^\prime = X^T {\bf y}
+\end{align*}
+其中，因為 $\forall\ {\bf u} \in {\mathbb R}^{K + 1}$ 且 ${\bf u} \ne 0$，皆有
+\begin{align*}
+    &{\bf u}^T (X^T X + N \lambda I_{K + 1}) {\bf u}\\
+    =\ &{\bf u}^T X^T X {\bf u} + N \lambda {\bf u}^T {\bf u}\\
+    =\ &(X {\bf u})^T (X {\bf u}) + N \lambda {\bf u}^T {\bf u}\\
+    =\ &\lVert X {\bf u} \rVert ^2 + N \lambda \lVert {\bf u} \rVert^2 > 0
+\end{align*}
+所以 $X^T X + N \lambda I_{K + 1}$ 為positive definite。\\
+所以 $X^T X + N \lambda I_{K + 1}$ 為invertible。\\
+因此可得
+\begin{align*}
+    \left(
+    \begin{array}{c}
+        b\\
+        w_1\\
+        w_2\\
+        \vdots\\
+        w_K
+    \end{array}
+    \right)
+    &= {\bf w}^\prime = (X^T X + N \lambda I_{K + 1})^{-1} X^T {\bf y}\\
+    &= \left(
+    \left(
+    \begin{array}{cc}
+        1 & {\bf x}_1^T\\
+        1 & {\bf x}_2^T\\
+        1 & {\bf x}_3^T\\
+        \vdots & \vdots\\
+        1 & {\bf x}_N^T
+    \end{array}
+    \right)^T
+    \left(
+    \begin{array}{cc}
+        1 & {\bf x}_1^T\\
+        1 & {\bf x}_2^T\\
+        1 & {\bf x}_3^T\\
+        \vdots & \vdots\\
+        1 & {\bf x}_N^T
+    \end{array}
+    \right)
+    + N \lambda I_{K + 1}
+    \right)^{-1}
+    \left(
+    \begin{array}{cc}
+        1 & {\bf x}_1^T\\
+        1 & {\bf x}_2^T\\
+        1 & {\bf x}_3^T\\
+        \vdots & \vdots\\
+        1 & {\bf x}_N^T
+    \end{array}
+    \right)
+    \left(
+    \begin{array}{c}
+        y_1\\
+        y_2\\
+        y_3\\
+        \vdots\\
+        y_N
+    \end{array}
+    \right)
+\end{align*}
+為 $L_{reg}$ 的一個critical point。$\ \square$\\
+
+\noindent
+{\bf \Large 2. Noise and regulation}\\
+
+Consider the linear model $f_{w, b}: {\mathbb R}^k \rightarrow {\mathbb R}$, where $w \in {\mathbb R}^k$ and $b \in {\mathbb R}$, defined as
+\begin{align*}
+    f_{w, b}(x) = w^T x + b
+\end{align*}
+
+Given dataset $S = \{(x_i, y_i)\}^N_{i = 1}$, if the inputs $x_i \in {\mathbb R}^k$ are contaminated with input noise $\eta_i \in {\mathbb R}^k$, we may consider the expected sum-of-squares loss in the presence of input noise as
+\begin{align*}
+    {\tilde L}_{ssq}(w, b) = E[\frac{1}{2N} \sum_{i = 1}^N (f_{w, b}(x_i + \eta_i) − y_i)^2]
+\end{align*}
+where the expectation is taken over the randomness of input noises $\eta_1,\ \cdots\ ,\ \eta_N$.\\
+
+Now assume the input noises $\eta_i = [\eta_{i, 1}\ \eta_{i, 2}\ \cdots\ \eta_{i, k}]$ are random vectors with zero mean $E[\eta_{i, j}] = 0$, and the covariance between components is given by
+\begin{align*}
+    E[\eta_{i, j} \eta_{i^\prime, j^\prime}] = \delta_{i, i^\prime} \delta_{j, j^\prime} \sigma^2
+\end{align*}
+where $\delta_{i, i^\prime} =
+\left\{
+\begin{array}{l}
+    1,\ if\ i = i^\prime\\
+    0,\ otherwise.
+\end{array}
+\right.$ denotes the Kronecker delta.\\
+
+Please show that
+\begin{align*}
+    {\tilde L}_{ssq}(w, b) = \frac{1}{2N} \sum_{i = 1}^N (f_{w, b}(x_i) − y_i)^2 + \frac{\sigma^2}{2} \| w \|^2
+\end{align*}
+
+That is, minimizing the expected sum-of-squares loss in the presence of input noise is equivalent to minimizing noise-free sum-of-squares loss with the addition of a L2-regularization term on the weights.
+
+\begin{itemize}
+    \item Hint: $\| x \|^2 = x^T x = Trace(x x^T)$.
+\end{itemize}
+
+\noindent
+{\bf \large solution}\\
+
+\noindent
+因為
+\begin{align*}
+    f_{{\bf w}, b}({\bf x}_i + {\bf \eta}_i) =\ &{\bf w}^T({\bf x}_i + {\bf \eta}_i) + b\\
+    =\ &({\bf w}^T {\bf x}_i + {\bf w}^T {\bf \eta}_i) + b\\
+    =\ &({\bf w}^T {\bf x}_i + b) + {\bf w}^T {\bf \eta}_i\\
+    =\ &f_{{\bf w}, b}({\bf x}_i) + {\bf w}^T {\bf \eta}_i
+\end{align*}
+所以
+\begin{align*}
+    \tilde{L}_{ssq}({\bf w}, b) =\ &E[\frac{1}{2N} \sum_{i = 1}^{N} (f_{{\bf w}, b} ({\bf x}_i + {\bf \eta}_i) - y_i)^2]\\
+    =\ &E[\frac{1}{2N} \sum_{i = 1}^{N} ((f_{{\bf w}, b} ({\bf x}_i) + {\bf w}^T {\bf \eta}_i) - y_i)^2]\\
+    =\ &E[\frac{1}{2N} \sum_{i = 1}^{N} ((f_{{\bf w}, b} ({\bf x}_i) - y_i) + {\bf w}^T {\bf \eta}_i)^2]\\
+    =\ &E[\frac{1}{2N} (\sum_{i = 1}^{N} (f_{{\bf w}, b} ({\bf x}_i) - y_i)^2 + \sum_{i = 1}^{N} 2(f_{{\bf w}, b} ({\bf x}_i) - y_i)({\bf w}^T {\bf \eta}_i) +\\
+    &\ \ \ \ \ \ \ \ \ \sum_{i = 1}^{N} ({\bf w}^T {\bf \eta}_i)^2]\\
+    =\ &\frac{1}{2N} (E[\sum_{i = 1}^{N} (f_{{\bf w}, b} ({\bf x}_i) - y_i)^2] + E[\sum_{i = 1}^{N} 2(f_{{\bf w}, b} ({\bf x}_i) - y_i)({\bf w}^T {\bf \eta}_i)] +\\
+    &\ \ \ \ \ \ E[\sum_{i = 1}^{N} ({\bf w}^T {\bf \eta}_i)^2])
+\end{align*}
+其中
+\begin{align*}
+    E[\sum_{i = 1}^{N} (f_{{\bf w}, b} ({\bf x}_i) - y_i)^2] = \sum_{i = 1}^{N} (f_{{\bf w}, b} ({\bf x}_i) - y_i)^2
+\end{align*}
+而
+\begin{align*}
+    &E[\sum_{i = 1}^{N} 2(f_{{\bf w}, b} ({\bf x}_i) - y_i)({\bf w}^T {\bf \eta}_i)]
+    =\ \sum_{i = 1}^{N} E[2(f_{{\bf w}, b} ({\bf x}_i) - y_i)({\bf w}^T {\bf \eta}_i)]\\
+    =\ &\sum_{i = 1}^{N} (2(f_{{\bf w}, b} ({\bf x}_i) - y_i)E[{\bf w}^T {\bf \eta}_i])
+    =\ \sum_{i = 1}^{N} (2(f_{{\bf w}, b} ({\bf x}_i) - y_i)E[\sum_{j = 1}^{K} w_j \eta_{ij}])\\
+    =\ &\sum_{i = 1}^{N} (2(f_{{\bf w}, b} ({\bf x}_i) - y_i) \sum_{j = 1}^{K} (w_j E[\eta_{ij}]))
+    =\ \sum_{i = 1}^{N} (2(f_{{\bf w}, b} ({\bf x}_i) - y_i) \sum_{j = 1}^{K} (w_j \cdot 0))
+    =\ 0
+\end{align*}
+而
+\begin{align*}
+    &E[\sum_{i = 1}^{N} ({\bf w}^T {\bf \eta}_i)^2]
+    =\ \sum_{i = 1}^{N} E[({\bf w}^T {\bf \eta}_i)^2]\\
+    =\ &\sum_{i = 1}^{N} E[(\sum_{j = 1}^{K} w_j \eta_{ij})^2]
+    =\ \sum_{i = 1}^{N} E[\sum_{1 \le j, j^\prime \le K} w_j w_{j^\prime} \eta_{ij} \eta_{ij^\prime}]\\
+    =\ &\sum_{i = 1}^{N} (\sum_{1 \le j, j^\prime \le K} w_j w_{j^\prime} E[\eta_{ij} \eta_{ij^\prime}])
+    =\ \sum_{i = 1}^{N} (\sum_{1 \le j, j^\prime \le K} w_j w_{j^\prime} \cdot \delta_{ii} \delta_{jj^\prime} \sigma^2)\\
+    =\ &\sum_{i = 1}^{N} (\sum_{1 \le j = j^\prime \le K} w_j w_{j^\prime} \cdot \delta_{ii} \delta_{jj^\prime} \sigma^2) +
+    \sum_{i = 1}^{N} (\sum_{1 \le j \ne j^\prime \le K} w_j w_{j^\prime} \cdot \delta_{ii} \delta_{jj^\prime} \sigma^2)\\
+    =\ &\sum_{i = 1}^{N} (\sum_{1 \le j = j^\prime \le K} w_j w_{j^\prime} \cdot 1 \cdot 1 \cdot \sigma^2) +
+    \sum_{i = 1}^{N} (\sum_{1 \le j \ne j^\prime \le K} w_j w_{j^\prime} \cdot 1 \cdot 0 \cdot \sigma^2)\\
+    =\ &\sum_{i = 1}^{N} (\sum_{j = 1}^{K} w_j^2 \sigma^2)
+    =\ \sum_{i = 1}^{N} (\sigma^2 \sum_{j = 1}^{K} w_j^2)
+    =\ \sum_{i = 1}^{N} (\sigma^2 \lVert {\bf w} \rVert^2)
+    =\ N \sigma^2 \lVert {\bf w} \rVert^2
+\end{align*}
+因此可得
+\begin{align*}
+    \tilde{L}_{ssq} ({\bf w}, b) =\ &\frac{1}{2N} (\sum_{i = 1}^{N} (f_{{\bf w}, b} ({\bf x}_i) - y_i)^2 + 0 + N \sigma^2 \lVert {\bf w} \rVert^2)\\
+    =\ &\frac{1}{2N} \sum_{i = 1}^{N} (f_{{\bf w}, b} ({\bf x}_i) - y_i)^2 + \frac{\sigma^2}{2} \lVert {\bf w} \rVert^2\ \square
+\end{align*}
+
+\noindent
+{\bf \Large 3. Kaggle Hacker}\\
+
+In the lecture, we've learnt the importance of validation. It is said that fine tuning your model based on Kaggle public leaderboard always causes "disaster" on private test dataset.\\
+
+Let's not talk about whether it'll lead to disastrous results or not. The fact is that most students even don't know how to "overfit" public leaderboard except for submitting many and many times.\\
+
+In this problem, you'll see how to take advantages of public leaderboard in hw1 kaggle competition. (In theory XD)\\
+
+Suppose you have trained $K + 1$ models $g_0,\ g_1,\ \cdots,\ g_K$, and in particular $g_0(x) = 0$ is the zero function.\\
+
+Assume the testing dataset is $\{(x_i, y_i)\}^N_{i = 1}$, where you only know $x_i$ while $y_i$ is hidden. Nevertheless, you are allowed to observe the sum of squares testing error
+\begin{align*}
+    e_k = \frac{1}{N} \sum_{i = 1}^N(g_k(x_i) − y_i)^2,\ k = 0,\ 1\ ,\cdots,\ K
+\end{align*}
+
+Of course, you know $s_k = \frac{1}{N} \sum^N_{i = 1}(g_k(x_i))^2$.\\
+
+\noindent
+{\bf 3-(a)}\\
+
+Please express $\sum^N_{i = 1}g_k(x_i)y_i$ in terms of $N,\ e_0,\ e_1,\ \cdots,\ e_K,\ s_1,\ \cdots,\ s_K$. Prove your answer.
+
+\begin{itemize}
+    \item Hint: $e_0 = \frac{1}{N} \sum^N_{i = 1}y^2_i$
+\end{itemize}
+
+\noindent
+{\bf 3-(b)}\\
+
+For the given $K + 1$ models in the previous problem, explain how to solve
+\begin{align*}
+    min_{\alpha_1, \cdots, \alpha_K} L_{test}(\sum^K_{k = 1} \alpha_k g_k) = min[\frac{1}{N} \sum^N_{i = 1}(\sum^K_{k = 1} \alpha_k g_k(x_i) − y_i)^2]
+\end{align*}
+and obtain the optimal weights $\alpha_1,\ \cdots,\ \alpha_K$.\\
+
+\noindent
+{\bf \large solution}\\
+
+\noindent
+{\bf 3-(a)}\\
+
+\noindent
+因為
+\begin{align*}
+    e_k =\ &\frac{1}{N} \sum_{i = 1}^{N} (g_k({\bf x}_i) - y_i)^2\\
+    =\ &\frac{1}{N} \sum_{i = 1}^{N} ((g_k({\bf x}_i))^2 - 2g_k({\bf x}_i)y_i + y_i^2)\\
+    =\ &\frac{1}{N} \sum_{i = 1}^{N} (g_k({\bf x}_i))^2 - \frac{2}{N} \sum_{i = 1}^{N} g_k({\bf x}_i)y_i + \frac{1}{N} \sum_{i = 1}^{N} y_i^2\\
+    =\ &s_k - \frac{2}{N} \sum_{i = 1}^{N} g_k({\bf x}_i)y_i + e_0
+\end{align*}
+所以
+\begin{align*}
+    \sum_{i = 1}^{N} g_k({\bf x}_i)y_i = \frac{N}{2}(s_k - e_k + e_0)\ \square
+\end{align*}
+
+\noindent
+{\bf 3-(b)}\\
+
+\noindent
+令
+\begin{align*}
+    {\bf Z} = 
+    \left(
+    \begin{array}{ccccc}
+        g_1({\bf x}_1) & g_2({\bf x}_1) & g_3({\bf x}_1) & \cdots & g_K({\bf x}_1)\\
+        g_1({\bf x}_2) & g_2({\bf x}_2) & g_3({\bf x}_2) & \cdots & g_K({\bf x}_2)\\
+        g_1({\bf x}_3) & g_2({\bf x}_3) & g_3({\bf x}_3) & \cdots & g_K({\bf x}_3)\\
+        \vdots & \vdots & \vdots & \  &\vdots\\
+        g_1({\bf x}_N) & g_2({\bf x}_N) & g_3({\bf x}_N) & \cdots & g_K({\bf x}_N)\\
+    \end{array}
+    \right)
+    \in {\mathbb R}^{N \times K}
+\end{align*}
+\begin{align*}
+    {\bf a} = 
+    \left(
+    \begin{array}{c}
+        \alpha_1\\
+        \alpha_2\\
+        \alpha_3\\
+        \vdots\\
+        \alpha_K
+    \end{array}
+    \right)
+    \in {\mathbb R}^K,\ 
+    {\bf y} = 
+    \left(
+    \begin{array}{c}
+        y_1\\
+        y_2\\
+        y_3\\
+        \vdots\\
+        y_N
+    \end{array}
+    \right)
+    \in {\mathbb R}^N,\ 
+    {\bf s} = 
+    \left(
+    \begin{array}{c}
+        \sum_{i = 1}^{N} g_1({\bf x}_i)y_i\\
+        \sum_{i = 1}^{N} g_2({\bf x}_i)y_i\\
+        \sum_{i = 1}^{N} g_3({\bf x}_i)y_i\\
+        \vdots\\
+        \sum_{i = 1}^{N} g_K({\bf x}_i)y_i\\
+    \end{array}
+    \right)
+    \in {\mathbb R}^K
+\end{align*}
+所以
+\begin{align*}
+    \frac{\partial}{\partial \alpha_n} L_{test} &= \frac{\partial}{\partial \alpha_n} (\frac{1}{N} \sum_{i = 1}^{N} (\sum_{k = 1}^{K} \alpha_k g_k({\bf x}_i) - y_i)^2)\\
+    &= \frac{1}{N} \sum_{i = 1}^{N} (2(\sum_{k = 1}^{K} \alpha_k g_k({\bf x}_i) - y_i) \cdot g_n({\bf x}_i))\\
+    &= \frac{2}{N} \sum_{i = 1}^{N} (g_n({\bf x}_i) (\sum_{k = 1}^{K} \alpha_k g_k({\bf x}_i) - y_i))\\
+\end{align*}
+令
+\begin{align*}
+    &\left(
+    \begin{array}{c}
+        \frac{\partial}{\partial \alpha_1} L_{test}\\
+        \frac{\partial}{\partial \alpha_2} L_{test}\\
+        \frac{\partial}{\partial \alpha_3} L_{test}\\
+        \vdots\\
+        \frac{\partial}{\partial \alpha_K} L_{test}
+    \end{array}
+    \right)
+    = 0\\
+    \Leftrightarrow
+    &\left(
+    \begin{array}{c}
+        \frac{2}{N} \sum_{i = 1}^{N} (g_1({\bf x}_i) (\sum_{k = 1}^{K} \alpha_k g_k({\bf x}_i) - y_i))\\
+        \frac{2}{N} \sum_{i = 1}^{N} (g_2({\bf x}_i) (\sum_{k = 1}^{K} \alpha_k g_k({\bf x}_i) - y_i))\\
+        \frac{2}{N} \sum_{i = 1}^{N} (g_3({\bf x}_i) (\sum_{k = 1}^{K} \alpha_k g_k({\bf x}_i) - y_i))\\
+        \vdots\\
+        \frac{2}{N} \sum_{i = 1}^{N} (g_K({\bf x}_i) (\sum_{k = 1}^{K} \alpha_k g_k({\bf x}_i) - y_i))
+    \end{array}
+    \right)
+    = 0\\
+    \Leftrightarrow
+    &\ \frac{2}{N} \left(
+    \begin{array}{ccccc}
+        g_1({\bf x}_1) & g_1({\bf x}_2) & g_1({\bf x}_3) & \cdots & g_1({\bf x}_N)\\
+        g_2({\bf x}_1) & g_2({\bf x}_2) & g_2({\bf x}_3) & \cdots & g_2({\bf x}_N)\\
+        g_3({\bf x}_1) & g_3({\bf x}_2) & g_3({\bf x}_3) & \cdots & g_3({\bf x}_N)\\
+        \vdots & \vdots & \vdots & \  &\vdots\\
+        g_K({\bf x}_1) & g_K({\bf x}_2) & g_K({\bf x}_3) & \cdots & g_K({\bf x}_N)
+    \end{array}
+    \right)
+    \cdot \\
+    &\left(
+    \left(
+    \begin{array}{ccccc}
+        g_1({\bf x}_1) & g_2({\bf x}_1) & g_3({\bf x}_1) & \cdots & g_K({\bf x}_1)\\
+        g_1({\bf x}_2) & g_2({\bf x}_2) & g_3({\bf x}_2) & \cdots & g_K({\bf x}_2)\\
+        g_1({\bf x}_3) & g_2({\bf x}_3) & g_3({\bf x}_3) & \cdots & g_K({\bf x}_3)\\
+        \vdots & \vdots & \vdots & \  &\vdots\\
+        g_1({\bf x}_N) & g_2({\bf x}_N) & g_3({\bf x}_N) & \cdots & g_K({\bf x}_N)
+    \end{array}
+    \right)
+    \left(
+    \begin{array}{c}
+        \alpha_1\\
+        \alpha_2\\
+        \alpha_3\\
+        \vdots\\
+        \alpha_K
+    \end{array}
+    \right)
+    - 
+    \left(
+    \begin{array}{c}
+        y_1\\
+        y_2\\
+        y_3\\
+        \vdots\\
+        y_N
+    \end{array}
+    \right)
+    \right)
+    = 0\\
+    \Leftrightarrow &Z^T (Z {\bf a} - {\bf y}) = 0\\
+    \Leftrightarrow &Z^T Z {\bf a} = Z^T {\bf y}
+\end{align*}
+其中
+\begin{align*}
+    Z^T {\bf y} &=
+    \left(
+    \begin{array}{ccccc}
+        g_1({\bf x}_1) & g_1({\bf x}_2) & g_1({\bf x}_3) & \cdots & g_1({\bf x}_N)\\
+        g_2({\bf x}_1) & g_2({\bf x}_2) & g_2({\bf x}_3) & \cdots & g_2({\bf x}_N)\\
+        g_3({\bf x}_1) & g_3({\bf x}_2) & g_3({\bf x}_3) & \cdots & g_3({\bf x}_N)\\
+        \vdots & \vdots & \vdots & \  &\vdots\\
+        g_K({\bf x}_1) & g_K({\bf x}_2) & g_K({\bf x}_3) & \cdots & g_K({\bf x}_N)
+    \end{array}
+    \right)
+    \left(
+    \begin{array}{c}
+        y_1\\
+        y_2\\
+        y_3\\
+        \vdots\\
+        y_N
+    \end{array}
+    \right)\\
+    &= 
+    \left(
+    \begin{array}{c}
+        \sum_{i = 1}^{N} g_1({\bf x}_i)y_i\\
+        \sum_{i = 1}^{N} g_2({\bf x}_i)y_i\\
+        \sum_{i = 1}^{N} g_3({\bf x}_i)y_i\\
+        \vdots\\
+        \sum_{i = 1}^{N} g_K({\bf x}_i)y_i
+    \end{array}
+    \right) = {\bf s}
+\end{align*}
+因此可得
+\begin{align*}
+    Z^T Z {\bf a} = Z^T {\bf y} \Leftrightarrow Z^T Z {\bf a} = {\bf s}
+\end{align*}
+設 $Z^T Z$ 為invertible，則
+\begin{align*}
+    \left(
+    \begin{array}{c}
+        \alpha_1\\
+        \alpha_2\\
+        \alpha_3\\
+        \vdots\\
+        \alpha_K
+    \end{array}
+    \right)
+    =\ &{\bf a} = (Z^T Z)^{-1} {\bf s}\\
+    =\
+    &\left(
+    \begin{array}{l}
+        \left(
+        \begin{array}{ccccc}
+            g_1({\bf x}_1) & g_1({\bf x}_2) & g_1({\bf x}_3) & \cdots & g_1({\bf x}_N)\\
+            g_2({\bf x}_1) & g_2({\bf x}_2) & g_2({\bf x}_3) & \cdots & g_2({\bf x}_N)\\
+            g_3({\bf x}_1) & g_3({\bf x}_2) & g_3({\bf x}_3) & \cdots & g_3({\bf x}_N)\\
+            \vdots & \vdots & \vdots & \  &\vdots\\
+            g_K({\bf x}_1) & g_K({\bf x}_2) & g_K({\bf x}_3) & \cdots & g_K({\bf x}_N)
+    \end{array}
+    \right)
+    \end{array}
+    \right.
+    \cdot \\
+    &\left.
+    \begin{array}{r}
+        \left(
+        \begin{array}{ccccc}
+            g_1({\bf x}_1) & g_2({\bf x}_1) & g_3({\bf x}_1) & \cdots & g_K({\bf x}_1)\\
+            g_1({\bf x}_2) & g_2({\bf x}_2) & g_3({\bf x}_2) & \cdots & g_K({\bf x}_2)\\
+            g_1({\bf x}_3) & g_2({\bf x}_3) & g_3({\bf x}_3) & \cdots & g_K({\bf x}_3)\\
+            \vdots & \vdots & \vdots & \  &\vdots\\
+            g_1({\bf x}_N) & g_2({\bf x}_N) & g_3({\bf x}_N) & \cdots & g_K({\bf    x}_N)
+    \end{array}
+    \right)
+    \end{array}
+    \right)^{-1} \cdot \\
+    &\left(
+    \begin{array}{c}
+        \sum_{i = 1}^{N} g_1({\bf x}_i)y_i\\
+        \sum_{i = 1}^{N} g_2({\bf x}_i)y_i\\
+        \sum_{i = 1}^{N} g_3({\bf x}_i)y_i\\
+        \vdots\\
+        \sum_{i = 1}^{N} g_K({\bf x}_i)y_i
+    \end{array}
+    \right)\\
+    =\
+    &\left(
+    \begin{array}{l}
+        \left(
+        \begin{array}{ccccc}
+            g_1({\bf x}_1) & g_1({\bf x}_2) & g_1({\bf x}_3) & \cdots & g_1({\bf x}_N)\\
+            g_2({\bf x}_1) & g_2({\bf x}_2) & g_2({\bf x}_3) & \cdots & g_2({\bf x}_N)\\
+            g_3({\bf x}_1) & g_3({\bf x}_2) & g_3({\bf x}_3) & \cdots & g_3({\bf x}_N)\\
+            \vdots & \vdots & \vdots & \  &\vdots\\
+            g_K({\bf x}_1) & g_K({\bf x}_2) & g_K({\bf x}_3) & \cdots & g_K({\bf x}_N)
+    \end{array}
+    \right)
+    \end{array}
+    \right.
+    \cdot \\
+    &\left.
+    \begin{array}{r}
+        \left(
+        \begin{array}{ccccc}
+            g_1({\bf x}_1) & g_2({\bf x}_1) & g_3({\bf x}_1) & \cdots & g_K({\bf x}_1)\\
+            g_1({\bf x}_2) & g_2({\bf x}_2) & g_3({\bf x}_2) & \cdots & g_K({\bf x}_2)\\
+            g_1({\bf x}_3) & g_2({\bf x}_3) & g_3({\bf x}_3) & \cdots & g_K({\bf x}_3)\\
+            \vdots & \vdots & \vdots & \  &\vdots\\
+            g_1({\bf x}_N) & g_2({\bf x}_N) & g_3({\bf x}_N) & \cdots & g_K({\bf    x}_N)
+    \end{array}
+    \right)
+    \end{array}
+    \right)^{-1} \cdot \\
+    &\left(
+    \begin{array}{c}
+        \frac{N}{2}(s_1 - e_1 + e_0)\\
+        \frac{N}{2}(s_2 - e_2 + e_0)\\
+        \frac{N}{2}(s_3 - e_3 + e_0)\\
+        \vdots\\
+        \frac{N}{2}(s_K - e_K + e_0)
+    \end{array}
+    \right)
+\end{align*}
+(其中 $\alpha_0$ 可以為任意實數而不會影響 $L_{test}$)$\ \square$\\
+
+\end{document}

@@ -1,0 +1,158 @@
+\documentclass{article}
+
+\usepackage{enumitem}
+\setenumerate[1]{itemsep = 1pt , partopsep = 1pt , parsep = \parskip , topsep = 1pt}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{xeCJK}
+\setCJKmainfont[AutoFakeBold = 2.5 , AutoFakeSlant = 0.4]{cwTeXKai}
+\newcommand{\parallelsum}{\mathbin{\!/\mkern-5mu/\!}}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{hyperref}
+\hypersetup{colorlinks = true , linkcolor = blue , filecolor = magenta , urlcolor = blue}
+\usepackage{graphicx}
+\graphicspath{{image/}}
+\usepackage{stmaryrd}
+
+\title{Machine Learning - Final Project\\{\Large Domain Adaptation}}
+\author{資工四 B05902021 徐祐謙\\資工四 B05902023 李澤諺\\資工四 B05902120 曾鈺婷}
+\date{January 16, 2020}
+
+\begin{document}
+
+\maketitle
+
+\noindent
+{\bf \LARGE Introduction and Motivation}\\
+
+本次final project的題目為：給定10個class的真實照片，試著用其訓練出一個model，以此將手繪的圖片進行分類。之所以選擇這個題目，是因為domain adaptation為transfer learning中一個很重要的問題：當我們想要處理的domain (稱為target domain)中沒有足夠多的data，但是在另一個domain (稱為source domain)中的data充足，可以讓我們在source domain中解決相同的問題，那我們就可以使用domain adaptation，透過在source domain中解決相同的問題，來幫助我們解決在target domain中的原問題。考慮到現實中蒐集data的困難度，我們不見得能在欲處理的target domain上蒐集到足夠多的data，不過網路上已有許多現成的大型dataset，其domain雖然可能會和我們想要處理的target domain不同，但是只要利用transfer learning中的domain adaptation，仍能幫助我們解決原本的問題，由此可見transfer learning在現實中的重要性。\\
+
+\bigskip
+
+\noindent
+{\bf \LARGE Data Preprocessing/Feature Engineering}\\
+
+\begin{enumerate}
+    \item[(1)] 因為testing data為手繪的黑白圖片，圖片中僅有物體的輪廓，而training data則是真實物體的彩色照片，為了讓training data盡可能和testing data相似，我們對training data使用了Canny edge detection，將training data中物體的edge找出，如此一來training data便會在外觀上和testing data相似(如下圖)，此時我們再用training data去訓練model，便有可能提高accuracy。\\
+\end{enumerate}
+
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{Canny_0.png}
+\end{center}
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{Canny_4.png}
+\end{center}
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{Canny_6.png}
+\end{center}
+
+\begin{enumerate}
+    \item[] 由於training data中除了欲分類的物體外，還有背景或其它物體等等，其經過Canny edge detection後也會留下輪廓，為一種noise，其對model的訓練會造成影響，為了減少背景或不相關的物體所產生的輪廓，我們試著將Canny edge detection的threshold調大(cv2.Canny(image, 250, 300))，將大部分的輪廓去掉，以減少雜訊。\\
+    \item[(2)] 由於training data的大小為 $32 \times 32$，而testing data的大小為 $28 \times 28$，因此我們有將testing data放大為 $32 \times 32$，再進行訓練與測試。\\
+    \item[(3)] 我們有將training data和testing data的值皆除以255，使得pixel的值normalize到0和1之間。\\
+    \item[(4)] 在訓練過程中，我們會將training data和testing data皆經過RandomAffine(10, translate = (0.1, 0.1), scale = (0.9, 1.1))和RandomHorizontalFlip()，以增加data的數量。\\
+\end{enumerate}
+
+\bigskip
+
+\noindent
+{\bf \LARGE Model Description}\\
+
+我們所使用的model為MCD \href{https://github.com/mil-tokyo/MCD_DA}{[ref]}，其架構為：前半部為一個feature extractor，其後接有兩個classifier。訓練過程中，每一個epoch皆分為三個步驟(如下圖所示)：\\
+
+\begin{enumerate}
+    \item[(1)] 訓練feature extractor和兩個classifier，使得feature extractor要能從source data中找出夠好的feature，並且兩個classifier皆要能以此將source data做出正確的分類。\\
+    \item[(2)] 在固定feature extractor的parameter之下，訓練兩個classifier，使得兩個classifier要在依然能正確分類source data的條件下，還要使得兩個classifier在target data上預測的distribution相差越多，增加兩個classifier的decision boundary之間的距離。\\
+    \item[(3)] 在固定兩個classifier的parameter之下，訓練feature extractor，使得feature extractor在target data上所找出的feature，經由兩個classifier預測後的distribution相差越多。
+\end{enumerate}
+
+\begin{center}
+    \includegraphics[width=\textwidth]{MCD_train.png}
+\end{center}
+
+在經過如此的訓練過程後，可以期望feature extractor在source domain和target domain上所找出的feature可以彼此align，如此一來只要classifier能夠將source data正確地分類，便也有可能將target data進行正確地分類。\\
+
+接著，我們所實作的MCD架構如下：
+
+\begin{center}
+    \includegraphics[width=\textwidth]{MCD.png}
+\end{center}
+
+\begin{center}
+    \begin{tabular}{|c|l|}
+        \hline
+        \multicolumn{2}{|c|}{MCD}\\
+        \hline
+        \multirow{14}*[-2.25em]{\makecell{feature\\extractor}} & \makecell[l]{Conv2d(1 , 64 , kernel\_size = (5 , 5) , stride = (1 , 1) ,\\padding = (2 , 2))}\\
+        \cline{2-2}
+        & BatchNorm2d(64)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & \makecell[l]{MaxPool2d(kernel\_size = (3 , 3) , stride = (2 , 2) ,\\padding = (1 , 1))}\\
+        \cline{2-2}
+        & \makecell[l]{Conv2d(64 , 64 , kernel\_size = (5 , 5) , stride = (1 , 1) ,\\padding = (2 , 2))}\\
+        \cline{2-2}
+        & BatchNorm2d(64)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & \makecell[l]{MaxPool2d(kernel\_size = (3 , 3) , stride = (2 , 2) ,\\padding = (1 , 1))}\\
+        \cline{2-2}
+        & \makecell[l]{Conv2d(64 , 128 , kernel\_size = (5 , 5) , stride = (1 , 1) ,\\padding = (2 , 2))}\\
+        \cline{2-2}
+        & BatchNorm2d(128)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Linear(8192 , 3072)\\
+        \cline{2-2}
+        & BatchNorm1d(3072)\\
+        \cline{2-2}
+        & ReLU()\\
+        \hline
+        \multirow{4}*{classifier} & Linear(3072 , 2048)\\
+        \cline{2-2}
+        & BatchNorm1d(2048)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Linear(2048 , 10)\\
+        \hline
+    \end{tabular}
+\end{center}
+
+我們使用了Adam訓練MCD，其中learning rate為0.00002，weight decay為0.0005，batch size為128，訓練了2000個epoch，以此得到MCD。\\
+
+\bigskip
+
+\noindent
+{\bf \LARGE Experiment and Discussion}\\
+
+除了使用MCD之外，我們也有試過將training data經過Canny edge detection處理之後直接給CNN進行訓練，以下為CNN和MCD在Kaggle上分別所得到最高的accuracy：
+
+\begin{center}
+    \begin{tabular}{|c|c|c|}
+        \hline
+        & Public & Private\\
+        \hline
+        CNN & 0.41526 & 0.42044\\
+        \hline
+        MCD & 0.80093 & 0.80145\\
+        \hline
+    \end{tabular}
+\end{center}
+
+由此可以看出直接使用CNN所得到的accuracy較差，其原因大致是因為雖然我們讓training data和testing data在外觀上盡可能地相似，但兩者之間在feature上的差異仍然很大，必須使用transfer learning去找出training data和testing data在feature上的相同與相
+異之處，讓training data和testing data在feature上相似，才能讓model正確地將testing data進行分類。\\
+
+\bigskip
+
+\noindent
+{\bf \LARGE Conclusion}\\
+
+Transfer learning在現實中其實很常發生，經由本次的final project我們也對其學習到了不少，當source domain和
+target domain有所差異時，僅僅只是使用data preprocessing讓兩者的外觀相似無法得到好的accuracy，必須使用transfer learning中的domain adaptation才能真正學到兩個domain之間feature上的相同與相異之處，進而做出正確的分類，而在前三名組別的分享中，皆有使用到pseudo-label (例如：若model在作測試時，認為某一筆testing data為某一個class的機率高於threshold，就將該class當作該筆testing data的pseudo-label，或是有組別將testing data進行cluster，分為1000個group，若model預測某一個group之中某一個class所佔的比例高於threshold，就將該class當作這個group之中所有testing data的pseudo-label)，使用pseudo-label訓練CNN，可以得到更高的accuracy，我們認為其原因為：transfer learning在target domain上是完全沒有label的，對target domain是一無所知，而若我們相信pseudo-label的正確性，則此時我們在target domain上就有label，知道一部分的正確答案，就可以進行supervised learning，比其它的學習方法略勝一籌，由此可見pseudo-label的重要性。總之，經由本次的final project，我們學習到了transfer learning的基本流程，收穫著實頗豐。
+
+\end{document}

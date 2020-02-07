@@ -1,0 +1,438 @@
+\documentclass{article}
+
+\usepackage{enumitem}
+\setenumerate[1]{itemsep = 1pt , partopsep = 1pt , parsep = \parskip , topsep = 1pt}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{xeCJK}
+\setCJKmainfont[AutoFakeBold = 2.5 , AutoFakeSlant = 0.4]{cwTeXKai}
+\newcommand{\parallelsum}{\mathbin{\!/\mkern-5mu/\!}}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{hyperref}
+\hypersetup{colorlinks = true , linkcolor = blue , filecolor = magenta , urlcolor = blue}
+\usepackage{graphicx}
+\graphicspath{{image/}}
+\usepackage{stmaryrd}
+
+\title{Machine Learning - Homework 5}
+\author{資工四 B05902023 李澤諺}
+\date{December 13, 2019}
+
+\begin{document}
+
+\maketitle
+
+\noindent
+{\bf \LARGE Part 1. Programming Problem}\\
+
+\noindent
+{\bf 1. (1\%) 請說明你實作之RNN模型架構及使用的word embedding方法，回報模型的正確率並繪出訓練曲線。}\\
+
+在word embedding中，首先，我使用spaCy的en\_core\_web\_lg將training data和testing data中的所有句子進行斷詞，接著將標點符號、stop word、emoji，以及非數字或非字母等等的詞去掉，再將所有的詞轉為basic form，並將所有句子進行trim或pad，以此進行preprocessing，接著，將所有句子輸入gensim的Word2Vec model進行訓練，而在Word2Vec model的訓練中，word vector為256維，使用skip gram訓練，並將出現次數小於5的詞視為UNK，以此訓練了200個iteration得到Word2Vec model。\\
+
+接著，以下為我於本次作業中所實作的RNN架構：
+
+\begin{center}
+    \begin{tabular}{|c|l|}
+        \hline
+        embedding & \makecell[l]{Embedding(embedding.size(0) , embedding.size(1) ,\\
+        padding\_idx = padding\_index)}\\
+        \hline
+        recurrent & \makecell[l]{LSTM(embedding.size(1) , 128 , batch\_first = True ,\\
+        bias = True , num\_layers = 2 , dropout = 0.3 ,\\
+        bidirectional = True)}\\
+        \hline
+        \multirow{13}*{linear} & Linear(768 , 100 , bias = True)\\
+        \cline{2-2}
+        & BatchNorm1d(100)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Dropout()\\
+        \cline{2-2}
+        & Linear(100 , 100 , bias = True)\\
+        \cline{2-2}
+        & BatchNorm1d(100)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Dropout()\\
+        \cline{2-2}
+        & Linear(100 , 100 , bias = True)\\
+        \cline{2-2}
+        & BatchNorm1d(100)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Dropout()\\
+        \cline{2-2}
+        & Linear(100 , 2 , bias = True)\\
+        \hline
+    \end{tabular}
+\end{center}
+
+我隨機選出2000個句子作為validation data，剩下的句子則作為training data，並且，我使用了Adam訓練RNN，其中learning rate為0.0001，batch size為1024，以此訓練了100個epoch，所得到的loss和F1-score如下圖所示：
+
+\begin{center}
+    \includegraphics[width=\textwidth]{RNN_loss.png}\\
+\end{center}
+
+\begin{center}
+    \includegraphics[width=\textwidth]{RNN_score.png}\\
+\end{center}
+
+以下為我訓練出來的RNN所得到的F1-score：
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \multirow{2}*{Train} & \multirow{2}*{Validation} & \multicolumn{2}{|c|}{Test}\\
+        \cline{3-4}
+        & & Public & Private\\
+        \hline
+        0.82260 & 0.75400 & 0.78372 & 0.81627\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\bigskip
+
+\noindent
+{\bf 2. (1\%) 請實作BOW+DNN模型，敘述你的模型架構，回報模型的正確率並繪出訓練曲線。}\\
+
+以下為我於本次作業中所實作的DNN架構：
+
+\begin{center}
+    \begin{tabular}{|c|l|}
+        \hline
+        \multirow{17}*{linear} & Linear(dimension , 100 , bias = True)\\
+        \cline{2-2}
+        & BatchNorm1d(100)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Dropout()\\
+        \cline{2-2}
+        & Linear(100 , 100 , bias = True)\\
+        \cline{2-2}
+        & BatchNorm1d(100)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Dropout()\\
+        \cline{2-2}
+        & Linear(100 , 100 , bias = True)\\
+        \cline{2-2}
+        & BatchNorm1d(100)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Dropout()\\
+        \cline{2-2}
+        & Linear(100 , 100 , bias = True)\\
+        \cline{2-2}
+        & BatchNorm1d(100)\\
+        \cline{2-2}
+        & ReLU()\\
+        \cline{2-2}
+        & Dropout()\\
+        \cline{2-2}
+        & Linear(100 , 2 , bias = True)\\
+        \hline
+    \end{tabular}
+\end{center}
+
+我隨機選出2000個句子作為validation data，剩下的句子則作為training data，並且，我使用了Adam訓練DNN，其中learning rate為0.0001，batch size為1024，以此訓練了100個epoch，所得到的loss和F1-score如下圖所示：
+
+\begin{center}
+    \includegraphics[width=\textwidth]{DNN_loss.png}\\
+\end{center}
+
+\begin{center}
+    \includegraphics[width=\textwidth]{DNN_score.png}\\
+\end{center}
+
+以下為我訓練出來的DNN所得到的F1-score：
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \multirow{2}*{Train} & \multirow{2}*{Validation} & \multicolumn{2}{|c|}{Test}\\
+        \cline{3-4}
+        & & Public & Private\\
+        \hline
+        0.99804 & 0.70200 & 0.76976 & 0.78837\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\bigskip
+
+\noindent
+{\bf 3. (1\%) 請敘述你如何improve performance (preprocess embedding，架構等)，並解釋為何這些做法可以使模型進步。}\\
+
+\begin{enumerate}
+    \item[(1)] 每個句子所作的preprocessing如第1題所述，標點符號、stop word、emoji，以及非數字或字母等等的詞，幾乎都不會影響到句子的語意，但是其在 RNN的訓練過程中，可能會變成一種noise，因此將其去掉，可能可以增進RNN的performance。\\
+    \item[(2)] 將每個詞轉為basic form，可以避免同一個詞因為文法變化而產生許多不同的word vector，使得同樣語意的句子透過RNN所得到的分數不同的問題。\\
+    \item[(3)] 在將句子輸入RNN之前，會先將各個句子進行trim或pad，首先會計算所有句子的平均長度，並將所有句子trim到平均長度以內，而若是長度不到平均長度的句子，則會將其pad到平均長度。雖然將句子中的詞去掉可能會遺失一些information，但是非常長的句子其實占了少數，若為了保留這些非常長的句子的information，而將大部分的句子加入padding，padding其實也算是一種noise，如此便會在data中加入大量的noise，使得RNN的performance變差，因此比較好的做法可能是將所有句子trim或pad到平均長度，既能保留大部分句子的information，也能盡可能減少padding，在trim丟掉 information和padding加入noise之間取得平衡。\\
+    \item[(4)] 在LSTM的output要傳給linear之前，我將LSTM的output對sequence的各個dimension取最大值、最小值以及平均值，並將這三個值concatenate之後才傳給linear。RNN輸出的sequence的各個dimension都代表了一種feature，因此各個dimension的最大值和最小值就很有可能代表了這句話之中哪個詞最能表現出該feature，以此加上 sequence的平均值再傳給linear，可能可以做出更正確的分類。\\
+\end{enumerate}
+
+\noindent
+{\bf 4. (\%) 請比較不做斷詞(e.g. 用空白分開)與有做斷詞，兩種方法實作出來的
+效果差異，並解釋為何有此差別。}\\
+
+我將training data和testing data中的所有句子分別以spaCy和空白進行斷詞後，為作比較而不將任何詞去掉，也不將詞轉為basic form，以此直接給第1題所述的Word2Vec model以及RNN進行訓練，兩者所得到的F1-score如下：
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|c|}
+        \hline
+        \multirow{2}*{} & \multirow{2}*{Train} & \multirow{2}*{Validation} & \multicolumn{2}{|c|}{Test}\\
+        \cline{4-5}
+        & & & Public & Private\\
+        \hline
+        spaCy & 0.79262 & 0.72050 & 0.79609 & 0.80232\\
+        \hline
+        空白 & 0.77224 & 0.70050 & 0.77209 & 0.74418\\
+        \hline
+    \end{tabular}
+\end{center}
+
+使用spaCy進行斷詞的performance比使用空白進行斷詞來得好，我認為可能的原因之一為有時英文的詞會縮寫在一起，例如"He's my bro."中，"he"和"is"縮寫在一起而未以空白隔開，此時用spaCy可以正確的將"he"和"is"斷詞，從而得到較為正確的information，因此使用spaCy進行斷詞所得到的performance較好。\\
+
+\noindent
+{\bf 5. (1\%) 請比較RNN與BOW兩種不同model對於"Today is hot, but I am happy."與 "I am happy, but today is hot."這兩句話的分數(model output)，並討論造成差異的原因。}\\
+
+以下為RNN和BOW+DNN分別對這兩句話進行預測的結果($(p, q)$ 的意思為model預測該句子不為 malicious的機率為 $p$，預測該句子為malicious的機率為 $q$：
+
+\begin{center}
+    \begin{tabular}{|c|c|c|}
+        \hline
+        & \makecell[c]{"Today is hot,\\but I am happy."} & \makecell[c]{"I am happy,\\but today is hot."}\\
+        \hline
+        RNN & $(0.9014, 0.0986)$ & $(0.7443, 0.2557)$\\
+        \hline
+        BOW+DNN & $(0.99998, 0.00002)$ & $(0.99998, 0.00002)$\\
+        \hline
+    \end{tabular}
+\end{center}
+
+由此可以看出RNN可以分辨出這兩句話在語意上的不同，但是BOW+DNN卻無法做到，原因在於RNN會考慮到字詞的順序是如何影響語意，但是BOW+DNN則不考慮字詞順序，因此對BOW+DNN來說這兩句話是一樣的，故BOW+DNN無法分辨出這兩句話語意的不同。\\
+
+\bigskip
+
+\noindent
+{\bf \LARGE Part 2. Math Problem}\\
+
+\noindent
+{\bf \Large LSTM Cell (1\%)}\\
+
+In this exercise, we will simulate the forward pass of a simple LSTM cell. Figure.1 shows a single LSTM cell, where $z$ is the cell input, $z_i$, $z_f$, $z_o$ are the control inputs of the gates, $c$ is the cell memory, and $f$, $g$, $h$ are activation functions. Given an input $x$, the cell input and the control inputs can be calculated by the following equations:
+\begin{align*}
+    z &= w \cdot x + b\\
+    z_i &= w_i \cdot x + b_i\\
+    z_f &= w_f \cdot x + b_f\\
+    z_o &= w_o \cdot x + b_o
+\end{align*}
+where $w$, $w_i$, $w_f$, $w_o$ are weights and $b$, $b_i$, $b_f$, $b_o$ are biases. The final output can be calculated by
+\begin{align*}
+    y = f(z_o) h(c^\prime)
+\end{align*}
+where the value stored in cell memory is updated by
+\begin{align*}
+    c^\prime = f(z_i) g(z) + c f(z_f)
+\end{align*}
+
+Given an input sequence $x^t$ $(t = 1,\ 2,\ \cdots,\ 8)$, please derive the output sequence $y_t$. The input sequence, the weights, and the activation functions are provided below. The initial value in cell memory is 0. Please note that your calculation process is required to receive full credit.
+
+\begin{center}
+    \includegraphics[width = \textwidth]{hw5_1.png}\\
+    {\bf Figure. 1}
+\end{center}
+
+\noindent
+{\bf \large solution}\\
+
+\noindent
+當 $t = 1$ 時
+\begin{align*}
+    &z = w \cdot x^1 + b = (0, 0, 0, 1) \cdot (0, 1, 0, 3) + 3 = 3\\
+    &z_i = w_i \cdot x^1 + b_i = (100, 100, 0, 0) \cdot (0, 1, 0, 3) - 10 = 90\\
+    &z_f = w_f \cdot x^1 + b_f = (-100, -100, 0, 0) \cdot (0, 1, 0, 3) + 110 = 10\\
+    &z_o = w_o \cdot x^1 + b_o = (0, 0, 100, 0) \cdot (0, 1, 0, 3) - 10 = -10\\
+    &c^\prime = f(z_i) g(z) + c f(z_f) = \frac{1}{1 + e^{-90}} \cdot 3 + 0 \cdot \frac{1}{1 + e^{-10}} \approx 3\\
+    &y_1 = f(z_o) h(c^\prime) = \frac{1}{1 + e^{-(-10)}} \cdot 3 \approx 0
+\end{align*}
+當 $t = 2$ 時
+\begin{align*}
+    &z = w \cdot x^2 + b = (0, 0, 0, 1) \cdot (1, 0, 1, -2) + 3 = -2\\
+    &z_i = w_i \cdot x^2 + b_i = (100, 100, 0, 0) \cdot (1, 0, 1, -2) - 10 = 90\\
+    &z_f = w_f \cdot x^2 + b_f = (-100, -100, 0, 0) \cdot (1, 0, 1, -2) + 110 = 10\\
+    &z_o = w_o \cdot x^2 + b_o = (0, 0, 100, 0) \cdot (1, 0, 1, -2) - 10 = 90\\
+    &c^\prime = f(z_i) g(z) + c f(z_f) = \frac{1}{1 + e^{-90}} \cdot (-2) + 3 \cdot \frac{1}{1 + e^{-10}} \approx 1\\
+    &y_2 = f(z_o) h(c^\prime) = \frac{1}{1 + e^{-90}} \cdot 1 \approx 1
+\end{align*}
+當 $t = 3$ 時
+\begin{align*}
+    &z = w \cdot x^3 + b = (0, 0, 0, 1) \cdot (1, 1, 1, 4) + 3 = 4\\
+    &z_i = w_i \cdot x^3 + b_i = (100, 100, 0, 0) \cdot (1, 1, 1, 4) - 10 = 190\\
+    &z_f = w_f \cdot x^3 + b_f = (-100, -100, 0, 0) \cdot (1, 1, 1, 4) + 110 = -90\\
+    &z_o = w_o \cdot x^3 + b_o = (0, 0, 100, 0) \cdot (1, 1, 1, 4) - 10 = 90\\
+    &c^\prime = f(z_i) g(z) + c f(z_f) = \frac{1}{1 + e^{-190}} \cdot 4 + 1 \cdot \frac{1}{1 + e^{-(-90)}} \approx 4\\
+    &y_3 = f(z_o) h(c^\prime) = \frac{1}{1 + e^{-90}} \cdot 4 \approx 4
+\end{align*}
+當 $t = 4$ 時
+\begin{align*}
+    &z = w \cdot x^4 + b = (0, 0, 0, 1) \cdot (0, 1, 1, 0) + 3 = 0\\
+    &z_i = w_i \cdot x^4 + b_i = (100, 100, 0, 0) \cdot (0, 1, 1, 0) - 10 = 90\\
+    &z_f = w_f \cdot x^4 + b_f = (-100, -100, 0, 0) \cdot (0, 1, 1, 0) + 110 = 10\\
+    &z_o = w_o \cdot x^4 + b_o = (0, 0, 100, 0) \cdot (0, 1, 1, 0) - 10 = 90\\
+    &c^\prime = f(z_i) g(z) + c f(z_f) = \frac{1}{1 + e^{-90}} \cdot 0 + 4 \cdot \frac{1}{1 + e^{-10}} \approx 4\\
+    &y_4 = f(z_o) h(c^\prime) = \frac{1}{1 + e^{-90}} \cdot 4 \approx 4
+\end{align*}
+當 $t = 5$ 時
+\begin{align*}
+    &z = w \cdot x^5 + b = (0, 0, 0, 1) \cdot (0, 1, 0, 2) + 3 = 2\\
+    &z_i = w_i \cdot x^5 + b_i = (100, 100, 0, 0) \cdot (0, 1, 0, 2) - 10 = 90\\
+    &z_f = w_f \cdot x^5 + b_f = (-100, -100, 0, 0) \cdot (0, 1, 0, 2) + 110 = 10\\
+    &z_o = w_o \cdot x^5 + b_o = (0, 0, 100, 0) \cdot (0, 1, 0, 2) - 10 = -10\\
+    &c^\prime = f(z_i) g(z) + c f(z_f) = \frac{1}{1 + e^{-90}} \cdot 2 + 4 \cdot \frac{1}{1 + e^{-10}} \approx 6\\
+    &y_5 = f(z_o) h(c^\prime) = \frac{1}{1 + e^{-(-10)}} \cdot 6 \approx 0
+\end{align*}
+當 $t = 6$ 時
+\begin{align*}
+    &z = w \cdot x^6 + b = (0, 0, 0, 1) \cdot (0, 0, 1, -4) + 3 = -4\\
+    &z_i = w_i \cdot x^6 + b_i = (100, 100, 0, 0) \cdot (0, 0, 1, -4) - 10 = -10\\
+    &z_f = w_f \cdot x^6 + b_f = (-100, -100, 0, 0) \cdot (0, 0, 1, -4) + 110 = 110\\
+    &z_o = w_o \cdot x^6 + b_o = (0, 0, 100, 0) \cdot (0, 0, 1, -4) - 10 = 90\\
+    &c^\prime = f(z_i) g(z) + c f(z_f) = \frac{1}{1 + e^{-(-10)}} \cdot (-4) + 6 \cdot \frac{1}{1 + e^{-110}} \approx 6\\
+    &y_6 = f(z_o) h(c^\prime) = \frac{1}{1 + e^{-90}} \cdot 6 \approx 6
+\end{align*}
+當 $t = 7$ 時
+\begin{align*}
+    &z = w \cdot x^7 + b = (0, 0, 0, 1) \cdot (1, 1, 1, 1) + 3 = 1\\
+    &z_i = w_i \cdot x^7 + b_i = (100, 100, 0, 0) \cdot (1, 1, 1, 1) - 10 = 190\\
+    &z_f = w_f \cdot x^7 + b_f = (-100, -100, 0, 0) \cdot (1, 1, 1, 1) + 110 = -90\\
+    &z_o = w_o \cdot x^7 + b_o = (0, 0, 100, 0) \cdot (1, 1, 1, 1) - 10 = 90\\
+    &c^\prime = f(z_i) g(z) + c f(z_f) = \frac{1}{1 + e^{-190}} \cdot 1 + 6 \cdot \frac{1}{1 + e^{-(-90)}} \approx 1\\
+    &y_7 = f(z_o) h(c^\prime) = \frac{1}{1 + e^{-90}} \cdot 1 \approx 1
+\end{align*}
+當 $t = 8$ 時
+\begin{align*}
+    &z = w \cdot x^8 + b = (0, 0, 0, 1) \cdot (1, 0, 1, 2) + 3 = 2\\
+    &z_i = w_i \cdot x^8 + b_i = (100, 100, 0, 0) \cdot (1, 0, 1, 2) - 10 = 90\\
+    &z_f = w_f \cdot x^8 + b_f = (-100, -100, 0, 0) \cdot (1, 0, 1, 2) + 110 = 10\\
+    &z_o = w_o \cdot x^8 + b_o = (0, 0, 100, 0) \cdot (1, 0, 1, 2) - 10 = 90\\
+    &c^\prime = f(z_i) g(z) + c f(z_f) = \frac{1}{1 + e^{-90}} \cdot 2 + 1 \cdot \frac{1}{1 + e^{-10}} \approx 3\\
+    &y_1 = f(z_o) h(c^\prime) = \frac{1}{1 + e^{-90}} \cdot 3 \approx 3\ \square
+\end{align*}
+
+\bigskip
+
+\noindent
+{\bf \Large Word Embedding (1\%)}\\
+
+Consider the Skip-Gram model below, let
+\begin{align*}
+    &h = W^T x\\
+    &u = W^{\prime T} h\\
+    &y = Softmax(u) = Softmax(W^{\prime T} W^T x)\\
+    &Loss = L = −log \prod_{c \in C} P(w_{output, c}, w_{input}) = −log \prod_{c \in C} \frac{exp(u_c)}{\Sigma_{i \in V} exp(u_i)}
+\end{align*}
+where $C$ = the context words of the input word. Calculate $\frac{\partial L}{\partial W^T_{ij}}$ and $\frac{\partial L}{\partial W^{\prime T}_{ij}}$.\\
+(Note: assume that softmax was performed on all output neuron, i.e., no negative sampling)
+
+\begin{center}
+    \includegraphics[scale = 0.15]{hw5_2.png}\\
+    {\bf Figure. 2}
+\end{center}
+
+\noindent
+{\bf \large solution}\\
+
+\noindent
+因為
+\begin{align*}
+    h = W^T x &= 
+    \left(
+    \begin{array}{cccc}
+        W_{11} & W_{21} & \cdots & W_{V1}\\
+        W_{12} & W_{22} & \cdots & W_{V2}\\
+        \vdots & \vdots & & \vdots\\
+        W_{1N} & W_{2N} & \cdots & W_{VN}
+    \end{array}
+    \right)
+    \left(
+    \begin{array}{c}
+        x_1\\
+        x_2\\
+        \vdots\\
+        x_V
+    \end{array}
+    \right)\\
+    &= \left(
+    \begin{array}{c}
+        \sum_{p = 1}^V W_{p1} x_p\\
+        \sum_{p = 1}^V W_{p2} x_p\\
+        \vdots\\
+        \sum_{p = 1}^V W_{pN} x_p
+    \end{array}
+    \right)
+\end{align*}
+\begin{align*}
+    u = W^{\prime T} h &= 
+    \left(
+    \begin{array}{cccc}
+        W^\prime_{11} & W^\prime_{21} & \cdots & W^\prime_{N1}\\
+        W^\prime_{12} & W^\prime_{22} & \cdots & W^\prime_{N2}\\
+        \vdots & \vdots & & \vdots\\ 
+        W^\prime_{1V} & W^\prime_{2V} & \cdots & W^\prime_{NV}
+    \end{array}
+    \right)
+    \left(
+    \begin{array}{c}
+        \sum_{p = 1}^V W_{p1} x_p\\
+        \sum_{p = 1}^V W_{p2} x_p\\
+        \vdots\\
+        \sum_{p = 1}^V W_{pN} x_p
+    \end{array}
+    \right)\\
+    &= \left(
+    \begin{array}{c}
+        \sum_{q = 1}^N (W^\prime_{q1} \sum_{p = 1}^V W_{pq} x_p)\\
+        \sum_{q = 1}^N (W^\prime_{q2} \sum_{p = 1}^V W_{pq} x_p)\\
+        \vdots\\
+        \sum_{q = 1}^N (W^\prime_{qV} \sum_{p = 1}^V W_{pq} x_p)
+    \end{array}
+    \right)\\
+    &= \left(
+    \begin{array}{c}
+        \sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{q1} x_p\\
+        \sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{q2} x_p\\
+        \vdots\\
+        \sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{qV} x_p
+    \end{array}
+    \right)
+\end{align*}
+所以
+\begin{align*}
+    L &= -log(\prod_{c \in C} \frac{exp(u_c)}{\sum_{r \in V} exp(u_r)})\\
+    &= -\sum_{c \in C} log \frac{exp(u_c)}{\sum_{r \in V} exp(u_r)}\\
+    &= -\sum_{c \in C} (log (exp(u_c)) - log (\sum_{r \in V} exp(u_r)))\\
+    &= -\sum_{c \in C} (u_c - log (\sum_{r \in V} exp(u_r)))\\
+    &= -\sum_{c \in C} (\sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{qc} x_p - log (\sum_{r \in V} exp(\sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{qr} x_p)))
+\end{align*}
+因此可得
+\begin{align*}
+    \frac{\partial L}{\partial W^T_{ij}} &= \frac{\partial L}{\partial W_{ji}}\\
+    &= -\sum_{c \in C} (W^\prime_{ic} x_j - \frac{\sum_{r \in V} W^\prime_{ir} x_j exp(\sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{qr} x_p)}{\sum_{r \in V} exp(\sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{qr} x_p)})\\
+    &= -\sum_{c \in C} (W^\prime_{ic} x_j - \frac{\sum_{r \in V} W^\prime_{ir} x_j exp(u_r)}{\sum_{r \in V} exp(u_r)})
+\end{align*}
+\begin{align*}
+    \frac{\partial L}{\partial W^{\prime T}_{ij}} &= \frac{\partial L}{\partial W^\prime_{ji}}\\
+    &= \llbracket i \in C \rrbracket (-\sum_{p = 1}^V W_{pj} x_p) + \sum_{c \in C} \frac{(\sum_{p = 1}^V W_{pj} x_p) exp(\sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{qi} x_p)}{\sum_{r \in V} exp(\sum_{p = 1}^V \sum_{q = 1}^N W_{pq} W^\prime_{qr} x_p)}\\
+    &= \llbracket i \in C \rrbracket (-\sum_{p = 1}^V W_{pj} x_p) + \sum_{c \in C} \frac{(\sum_{p = 1}^V W_{pj} x_p) exp(u_i)}{\sum_{r \in V} exp(u_r)}\ \square
+\end{align*}
+
+\end{document}

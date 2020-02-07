@@ -1,0 +1,309 @@
+\documentclass{article}
+
+\usepackage{enumitem}
+\setenumerate[1]{itemsep = 1pt , partopsep = 1pt , parsep = \parskip , topsep = 1pt}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{xeCJK}
+\setCJKmainfont[AutoFakeBold = 2.5 , AutoFakeSlant = 0.4]{cwTeXKai}
+\newcommand{\parallelsum}{\mathbin{\!/\mkern-5mu/\!}}
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\usepackage{hyperref}
+\hypersetup{colorlinks = true , linkcolor = blue , filecolor = magenta , urlcolor = blue}
+\usepackage{graphicx}
+\graphicspath{{image/}}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+
+\title{Machine Learning - Homework 3}
+\author{資工四 B05902023 李澤諺}
+\date{November 11, 2019}
+
+\begin{document}
+
+\maketitle
+
+\noindent
+{\bf \LARGE Part 1. Programming Problem}\\
+
+\noindent
+{\bf 1. (1\%) 請說明這次使用的model架構，包含各層維度及連接方式。}\\
+
+以下為我於本次作業中所實作的CNN架構：
+
+\begin{center}
+    \includegraphics[width=\textwidth]{CNN.png}
+\end{center}
+
+\begin{center}
+    \begin{tabular}{|l|}
+        \hline
+        Conv2d(1 , 32 , kernel\_size = (3 , 3) , stride = (1 , 1) , padding = (2 , 2))\\
+        \hline
+        BatchNorm2d(32)\\
+        \hline
+        ReLU()\\
+        \hline
+        MaxPool2d(2)\\
+        \hline
+        Dropout2d()\\
+        \hline
+        Conv2d(32 , 64 , kernel\_size = (3 , 3) , stride = (1 , 1) , padding = (2 , 2))\\
+        \hline
+        BatchNorm2d(64)\\
+        \hline
+        ReLU()\\
+        \hline
+        MaxPool2d(2)\\
+        \hline
+        Dropout2d()\\
+        \hline
+        Conv2d(64 , 128 , kernel\_size = (3 , 3) , stride = (1 , 1) , padding = (2 , 2))\\
+        \hline
+        BatchNorm2d(128)\\
+        \hline
+        ReLU()\\
+        \hline
+        MaxPool2d(2)\\
+        \hline
+        Dropout2d()\\
+        \hline
+        Conv2d(128 , 256 , kernel\_size = (3 , 3) , stride = (1 , 1) , padding = (2 , 2))\\
+        \hline
+        BatchNorm2d(256)\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\begin{center}
+    \begin{tabular}{|l|}
+        \hline
+        ReLU()\\
+        \hline
+        MaxPool2d(2)\\
+        \hline
+        Dropout2d()\\
+        \hline
+        Conv2d(256 , 512 , kernel\_size = (3 , 3) , stride = (1 , 1) , padding = (2 , 2))\\
+        \hline
+        BatchNorm2d(512)\\
+        \hline
+        ReLU()\\
+        \hline
+        MaxPool2d(2)\\
+        \hline
+        Dropout2d()\\
+        \hline
+        Conv2d(512 , 1024 , kernel\_size = (3 , 3) , stride = (1 , 1) , padding = (2 , 2))\\
+        \hline
+        BatchNorm2d(1024)\\
+        \hline
+        ReLU()\\
+        \hline
+        MaxPool2d(2)\\
+        \hline
+        Dropout2d()\\
+        \hline
+        Linear(4096 , 100 , bias = True)\\
+        \hline
+        BatchNorm1d(100)\\
+        \hline
+        ReLU()\\
+        \hline
+        Dropout()\\
+        \hline
+        Linear(100 , 100 , bias = True)\\
+        \hline
+        BatchNorm1d(100)\\
+        \hline
+        ReLU()\\
+        \hline
+        Dropout()\\
+        \hline
+        Linear(100 , 7 , bias = True)\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\bigskip
+
+\noindent
+{\bf 2. (1\%) 請附上model的training/validation history (loss and accuracy)。}\\
+
+我隨機選出了2000張照片作為validation data，剩下的照片則作為training data，並且，我使用了Adam訓練CNN，其中learning rate為0.0001，batch size為1024，以此訓練了2000個epoch，所得到的loss和accuracy如下圖所示：
+
+\begin{center}
+    \includegraphics[width=\textwidth]{CNN_loss.png}\\
+\end{center}
+
+\begin{center}
+    \includegraphics[width=\textwidth]{CNN_accuracy.png}\\
+\end{center}
+
+\noindent
+{\bf 3. (1\%) 畫出confusion matrix分析哪些類別的圖片容易使model搞混，並簡單說明。 (ref：\href{https://en.wikipedia.org/wiki/Confusion_matrix}{https://en.wikipedia.org/wiki/Confusion\_matrix}})\\
+
+\begin{center}
+    \includegraphics[width=\textwidth]{confusion_matrix.png}\\
+\end{center}
+
+由confusion matrix可以看出，最容易辨識錯誤的情緒為將surprise辨識為fear，其次為將fear辨識為angry，再者為將fear辨識為sad以及將sad辨識為angry，我認為其原因為這些被辨識錯誤的情緒多為負面情緒，其在人的面部表情呈現上其實相差無多，連人們也經常會辨識錯誤，在電腦的表現上似乎也是如此。\\
+
+\bigskip
+
+\noindent
+{\bf [關於第四及第五題]}\\
+{\bf 可以使用簡單的3-layer CNN model [64, 128, 512] 進行實作。}\\
+
+\noindent
+{\bf 4. (1\%) 畫出CNN model的saliency map，並簡單討論其現象。(ref：\href{ https://reurl.cc/Qpjg8b}{https://reurl.cc/Qpjg8b})}\\
+
+以下為從7種情緒中各隨機挑出一張照片，並使用3-layer CNN model [64, 128, 512] 所畫出的saliency map：\\
+
+\begin{center}
+    \includegraphics[width=\textwidth]{saliency_map_1.png}
+\end{center}
+
+\begin{center}
+    \includegraphics[width=\textwidth]{saliency_map_2.png}\\
+\end{center}
+
+由此可以看出，saliency map中數值較大的地方主要是集中在面部五官的部分，因此可以推測CNN主要是透過五官來辨識情緒。\\
+
+\bigskip
+
+\noindent
+{\bf 5. (1\%) 畫出最後一層的filters最容易被哪些feature activate。(ref：\\
+\href{https://reurl.cc/ZnrgYg}{https://reurl.cc/ZnrgYg})}\\
+
+以下為在訓練完3-layer CNN model [64, 128, 512]之後，從最後一個convolution layer中取出32個filter，找出可以使其最為activate的各個feature：\\
+
+\begin{center}
+    \includegraphics[width=\textwidth]{feature_visualization.png}\\
+\end{center}
+
+以上的feature看起來都是一些簡單的幾何圖案或材質，比預想中的簡單許多，我猜測其原因為照片中人臉佔了絕大部分的面積，而人的五官本來就是由簡單的幾何形狀所構成，沒有太複雜的特徵，因此只要能偵測簡單的幾何形狀，便有可能辨識出人的五官，進而將照片中的人臉情緒做分類，此外，CNN的架構簡單也有可能為造成該現象的原因之一。\\
+
+\bigskip
+
+\noindent
+{\bf \LARGE Part 2. Math Problem}\\
+
+\noindent
+{\bf \Large 1. Convolution (1\%)}\\
+
+As we mentioned in class, image size may change after convolution layers. Consider a batch of image data with shape $(B, W, H, input\_channels)$, how will the shape change after the convolution layer?\\
+
+\noindent
+$Conv2D (input\_channels,\ output\_channels,\ kernel\_size = (k_1,\ k_2),\ stride = (s_1,\ s_2),\ padding = (p_1,\ p_2))$\\
+
+To simplify the answer：the padding tuple means that we pad $p_1$ pixels on both left and right side, and $p_2$ pixels for top and bottom.\\
+
+\noindent
+{\bf \large solution}\\
+
+\noindent
+由PyTorch官方API (\href{https://pytorch.org/docs/stable/nn.html#conv2d}{https://pytorch.org/docs/stable/nn.html#conv2d})，可知 $(B, W, H, input\_channels)$ 在經過題幹中所述的convolution layer之後，會變為\\
+$(B, \floor*{\frac{W + 2 P_1 - k_1}{s_1} + 1}, \floor*{\frac{H + 2 P_2 - k_2}{s_2} + 1}, output\_channels)$。$\ \square$\\
+
+\bigskip
+
+\noindent
+{\bf \Large 2. Batch Normalization (1\%)}\\
+
+Besides Dropout, we usually use Batch Normalization in training nowadays \href{https://arxiv.org/pdf/1502.03167.pdf}{[ref]}. The trick is popular within the deep networks due to its convenience while training. It preserves the distribution within hidden layers and avoids gradient vanish.\\
+
+The algorithm can be written as below：\\
+
+\begin{algorithm}[H]
+    \caption{Batch Normalization}
+    \SetAlgoLined
+    \SetKwInOut{Input}{Input}
+    \SetKwInOut{Output}{Output}
+    \Input{Values of $x$ over a mini−batch: ${\mathcal B} = \{x_{1 \cdots m}\}$;\\}
+    \Output{$\{y_i = BN_{\gamma, \beta}(x_i)\}$;\\
+    Parameters to be learned: $\gamma, \beta$;\\}
+    $\mu_{\mathcal B} \leftarrow \frac{1}{m} \sum^m_{i = 1} x_i$ //mini−batch mean\\
+    $\sigma^2_{\mathcal B} \leftarrow \frac{1}{m} \sum^m_{i = 1} (x_i − \mu_{\mathcal B})^2$ //mini−batch variance\\
+    ${\hat x}_i \leftarrow \frac{x_i − \mu_{\mathcal B}}{\sqrt{\sigma^2_{\mathcal B} + \epsilon}}$ //normalize\\
+    $y_i \leftarrow \gamma {\hat x}_i + \beta \equiv BN_{\gamma, \beta}(x_i)$ //scale and shift\\
+\end{algorithm}
+
+\bigskip
+
+How to update $\gamma$ and $\beta$ from the optimization process of loss?\\
+
+Just try to derive $\frac{\partial l}{\partial {\hat x}_i}, \frac{\partial l}{\partial \sigma^2_{\mathcal B}}, \frac{\partial l}{\partial \mu_{\mathcal B}}, \frac{\partial l}{\partial x_i}, \frac{\partial l}{\partial \gamma}, \frac{\partial l}{\partial \beta}$.\\
+
+\noindent
+{\bf \large solution}\\
+
+\noindent
+因為
+\begin{align*}
+    &\mu_{\mathcal B} = \mu_{\mathcal B} (x_1, x_2, \cdots, x_m) = \frac{1}{m} \sum_{i = 1}^m x_i\\
+    &\sigma^2_{\mathcal B} = \sigma^2_{\mathcal B} (x_1, x_2, \cdots, x_m, \mu_{\mathcal B}) = \frac{1}{m} \sum_{i = 1}^m (x_i - \mu_{\mathcal B})^2\\
+    &{\hat x}_i = {\hat x}_i (x_i, \mu_{\mathcal B}, \sigma^2_{\mathcal B}, \epsilon) = \frac{x_i - \mu_{\mathcal B}}{\sqrt{\sigma^2_{\mathcal B} + \epsilon}}\\
+    &y_i = y_i ({\hat x}_i, \gamma, \beta) = \gamma {\hat x}_i + \beta
+\end{align*}
+所以
+\begin{align*}
+    \frac{\partial l}{\partial {\hat x}_i} = \frac{\partial l}{\partial y_i} \frac{\partial y_i}{\partial {\hat x}_i} = \frac{\partial l}{\partial y_i} \cdot \frac{\partial}{\partial {\hat x}_i} (\gamma {\hat x}_i + \beta) = \frac{\partial l}{\partial y_i} \cdot \gamma
+\end{align*}
+\begin{align*}
+    \frac{\partial l}{\partial \sigma^2_{\mathcal B}} &= \sum_{i = 1}^m \frac{\partial l}{\partial {\hat x}_i} \frac{\partial {\hat x}_i}{\partial \sigma^2_{\mathcal B}} = \sum_{i = 1}^m \frac{\partial l}{\partial {\hat x}_i} \cdot \frac{\partial}{\partial \sigma^2_{\mathcal B}} \frac{x_i - \mu_{\mathcal B}}{\sqrt{\sigma^2_{\mathcal B} + \epsilon}}\\
+    &= \sum_{i = 1}^m \frac{\partial l}{\partial {\hat x}_i} \cdot (x_i - \mu_{\mathcal B}) \cdot \frac{-1}{2} (\sigma^2_{\mathcal B} + \epsilon)^{-\frac{3}{2}}
+\end{align*}
+\begin{align*}
+    \frac{\partial l}{\partial \mu_{\mathcal B}} &= \sum_{i = 1}^m \frac{\partial l}{\partial {\hat x}_i} \frac{\partial {\hat x}_i}{\partial \mu_{\mathcal B}} + \frac{\partial l}{\partial \sigma^2_{\mathcal B}} \frac{\partial \sigma^2_{\mathcal B}}{\partial \mu_{\mathcal B}}\\
+    &= \sum_{i = 1}^m \frac{\partial l}{\partial {\hat x}_i} \cdot \frac{\partial}{\partial \mu_{\mathcal B}} \frac{x_i - \mu_{\mathcal B}}{\sqrt{\sigma^2_{\mathcal B}} + \epsilon} + \frac{\partial l}{\partial \sigma^2_{\mathcal B}} \cdot \frac{\partial}{\partial \mu_{\mathcal B}} \frac{1}{m} \sum_{i = 1}^m (x_i - \mu_{\mathcal B})^2\\
+    &= \sum_{i = 1}^m \frac{\partial l}{\partial {\hat x}_i} \cdot \frac{-1}{\sqrt{\sigma^2_{\mathcal B} + \epsilon}} + \frac{\partial l}{\partial \sigma^2_{\mathcal B}} \cdot \frac{\sum_{i = 1}^m -2(x_i - \mu_{\mathcal B})}{m}
+\end{align*}
+\begin{align*}
+    \frac{\partial l}{\partial x_i} &= \frac{\partial l}{\partial {\hat x}_i} \frac{\partial {\hat x}_i}{\partial x_i} + \frac{\partial l}{\partial \sigma^2_{\mathcal B}} \frac{\partial \sigma^2_{\mathcal B}}{\partial x_i} + \frac{\partial l}{\partial \mu_{\mathcal B}} \frac{\partial \mu_{\mathcal B}}{\partial x_i}\\
+    &= \frac{\partial l}{\partial {\hat x}_i} \cdot \frac{\partial}{\partial x_i} \frac{x_i - \mu_{\mathcal B}}{\sqrt{\sigma^2_{\mathcal B} + \epsilon}} + \frac{\partial l}{\partial \sigma^2_{\mathcal B}} \cdot \frac{\partial}{\partial x_i} \frac{1}{m} \sum_{j = 1}^m (x_j - \mu_{\mathcal B})^2 + \frac{\partial l}{\partial \mu_{\mathcal B}} \cdot \frac{\partial}{\partial x_i} \frac{1}{m} \sum_{j = 1}^m x_j\\
+    &= \frac{\partial l}{\partial {\hat x}_i} \cdot \frac{1}{\sqrt{\sigma^2_{\mathcal B} + \epsilon}} + \frac{\partial l}{\partial \sigma^2_{\mathcal B}} \cdot \frac{2(x_i - \mu_{\mathcal B})}{m} + \frac{\partial l}{\partial \mu_{\mathcal B}} \cdot \frac{1}{m}
+\end{align*}
+\begin{align*}
+    \frac{\partial l}{\partial \gamma} = \sum_{i = 1}^m \frac{\partial l}{\partial y_i} \frac{\partial y_i}{\partial \gamma} = \sum_{i = 1}^m \frac{\partial l}{\partial y_i} \cdot \frac{\partial}{\partial \gamma} (\gamma {\hat x}_i + \beta) = \sum_{i = 1}^m \frac{\partial l}{\partial y_i} \cdot \frac{\partial}{\partial \gamma} {\hat x}_i
+\end{align*}
+\begin{align*}
+    \frac{\partial l}{\partial \beta} = \sum_{i = 1}^m \frac{\partial l}{\partial y_i} \frac{\partial y_i}{\partial \beta} = \sum_{i = 1}^m \frac{\partial l}{\partial y_i} \cdot \frac{\partial}{\partial \beta} (\gamma {\hat x}_i + \beta) = \sum_{i = 1}^m \frac{\partial l}{\partial y_i}\ \square\\
+\end{align*}
+
+\noindent
+{\bf \Large 2. Softmax and Cross Entropy (1\%)}\\
+
+In classification problem, we use softmax as activation function and cross entropy as loss function.
+
+\begin{align*}
+    &softmax(z_t) = \frac{e^{z_t}}{\sum_i e^{z_i}}\\
+    &cross\_entropy = L(y, {\hat y}) = −\sum_i y_i log{\hat y}_i\\
+    &cross\_entropy = L_t(y_t, {\hat y}_t) = −y_t log {\hat y}_t\\
+    &{\hat y}_t = softmax(z_t)\\
+\end{align*}
+
+Derive that $\frac{\partial L_t}{\partial z_t} = {\hat y}_t - y_t$.\\
+
+\noindent
+{\bf \large solution}\\
+
+\noindent
+題幹中的 $ L_t(y_t, {\hat y}_t) = −y_t log {\hat y}_t$ 為當 $y_t = 1$ 時的cross entropy loss，此時\\
+\begin{align*}
+    \frac{\partial L_t}{\partial z_t} &= \frac{\partial L_t}{\partial {\hat y}_t} \frac{\partial {\hat y}_t}{\partial z_t} = \frac{\partial}{\partial {\hat y}_t} (-y_t log {\hat y}_t) \cdot \frac{\partial}{\partial z_t} \frac{e^{z_t}}{\sum_i e^{z_i}}\\
+    &= -\frac{y_t}{{\hat y}_t} \cdot \frac{e^{z_t} \cdot \sum_i e^{z_i} - e^{z_t} \cdot e^{z_t}}{(\sum_i e^{z_i})^2}\\
+    &= -\frac{y_t}{{\hat y}_t} \cdot \frac{e^{z_t}}{\sum_i e^{z_i}} (1 - \frac{e^{z_t}}{\sum_i e^{z_i}})\\
+    &= -\frac{y_t}{{\hat y}_t} \cdot {\hat y}_t (1 - {\hat y}_t) = y_t {\hat y}_t - y_t = {\hat y}_t - y_t
+\end{align*}
+而當 $y_t = 0$ 時，cross entropy loss應為 $L_t(y_t, {\hat y}_t) = −(1 - y_t) log (1 - {\hat y}_t)$，此時
+\begin{align*}
+    \frac{\partial L_t}{\partial z_t} &= \frac{\partial L_t}{\partial {\hat y}_t} \frac{\partial {\hat y}_t}{\partial z_t} = \frac{\partial}{\partial {\hat y}_t} (-(1 - y_t) log (1 - {\hat y}_t)) \cdot \frac{\partial}{\partial z_t} \frac{e^{z_t}}{\sum_i e^{z_i}}\\
+    &= \frac{1 - y_t}{1 - {\hat y}_t} \cdot \frac{e^{z_t} \cdot \sum_i e^{z_i} - e^{z_t} \cdot e^{z_t}}{(\sum_i e^{z_i})^2}\\
+    &= \frac{1 - y_t}{1 - {\hat y}_t} \cdot \frac{e^{z_t}}{\sum_i e^{z_i}} (1 - \frac{e^{z_t}}{\sum_i e^{z_i}})\\
+    &= \frac{1 - y_t}{1 - {\hat y}_t} \cdot {\hat y}_t (1 - {\hat y}_t) = {\hat y}_t - y_t {\hat y}_t = {\hat y}_t - y_t\ \square
+\end{align*}
+
+\end{document}
