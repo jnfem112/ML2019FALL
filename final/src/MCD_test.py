@@ -36,7 +36,6 @@ def load_data():
 def test(test_x , generator , classifier_1 , classifier_2 , device):
 	# Hyper-parameter.
 	batch_size = 1024
-	threshold = 0.5
 
 	test_dataset = dataset(test_x)
 	test_loader = DataLoader(test_dataset , batch_size = batch_size , shuffle = False)

@@ -11,11 +11,6 @@ def load_data():
 	with open(sys.argv[2] , 'r') as file:
 		train_y = np.array([line for line in file]).astype(np.int)
 
-	number_of_data = train_x.shape[0]
-	index = np.arange(number_of_data)
-	np.random.shuffle(index)
-	train_x = train_x[index]
-	train_y = train_y[index]
 	validation_x = train_x[ : 1000]
 	validation_y = train_y[ : 1000]
 	train_x = train_x[1000 : ]

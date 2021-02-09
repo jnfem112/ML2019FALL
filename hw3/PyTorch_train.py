@@ -37,10 +37,6 @@ def load_data():
 	df = pd.read_csv(sys.argv[2])
 	label = df.values
 
-	number_of_data = label.shape[0]
-	index = np.arange(number_of_data)
-	np.random.shuffle(index)
-	label = label[index]
 	validation_label = label[ : 2000]
 	train_label = label[2000 : ]
 

@@ -23,11 +23,6 @@ def load_data():
 	train_y = df['label'].values
 	train_y = to_categorical(train_y)
 
-	number_of_data = train_x.shape[0]
-	index = np.arange(number_of_data)
-	np.random.shuffle(index)
-	train_x = train_x[index]
-	train_y = train_y[index]
 	validation_x = train_x[ : 2000]
 	validation_y = train_y[ : 2000]
 	train_x = train_x[2000 : ]

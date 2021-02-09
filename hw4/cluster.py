@@ -22,11 +22,13 @@ def cluster(test_x , model , device):
 	test_loader = DataLoader(test_x , batch_size = batch_size , shuffle = False)
 
 	model.to(device)
+	model.eval()
 	new_x = list()
-	for data in test_loader:
-		data = data.to(device)
-		(encode , decode) = model(data)
-		new_x.append(encode.cpu().detach().numpy())
+	with torch.no_grad():
+		for data in test_loader:
+			data = data.to(device)
+			(encode , decode) = model(data)
+			new_x.append(encode.cpu().detach().numpy())
 	new_x = np.concatenate(new_x , axis = 0)
 	new_x = new_x.reshape((test_x.shape[0] , -1))
 	new_x = (new_x - np.mean(new_x , axis = 0)) / np.std(new_x , axis = 0)

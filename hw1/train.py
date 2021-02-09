@@ -52,11 +52,6 @@ def load_data():
 	train_x = np.array(train_x)
 	train_y = np.array(train_y)
 
-	number_of_data = train_x.shape[0]
-	index = np.arange(number_of_data)
-	np.random.shuffle(index)
-	train_x = train_x[index]
-	train_y = train_y[index]
 	validation_x = train_x[ : 500]
 	validation_y = train_y[ : 500]
 	train_x = train_x[500 : ]

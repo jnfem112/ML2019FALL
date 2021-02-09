@@ -32,6 +32,6 @@ class RNN_0(nn.Module):
 	def forward(self , x):
 		x = self.embedding(x)
 		(x , _) = self.recurrent(x)
-		x = torch.cat([x.min(1).values , x.max(1).values , x.mean(1)] , 1)
+		x = torch.cat([x.min(dim = 1).values , x.max(dim = 1).values , x.mean(dim = 1)] , dim = 1)
 		x = self.linear(x)
 		return x

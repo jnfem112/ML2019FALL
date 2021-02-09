@@ -73,10 +73,8 @@ def train(train_x , train_y , test_x , generator , classifier_1 , classifier_2 ,
 
 	train_dataset = dataset(train_x , train_y , True , transform , True)
 	test_dataset = dataset(test_x , None , False , transform , True)
-	validation_dataset = dataset(test_x[ : 100] , None , False , None , False)
 	train_loader = DataLoader(train_dataset , batch_size = batch_size , shuffle = True)
 	test_loader = DataLoader(test_dataset , batch_size = batch_size , shuffle = True)
-	validation_loader = DataLoader(validation_dataset , batch_size = batch_size , shuffle = False)
 
 	(generator , classifier_1 , classifier_2) = (generator.to(device) , classifier_1.to(device) , classifier_2.to(device))
 	(optimizer_generator , optimizer_classifier_1 , optimizer_classifier_2) = (Adam(generator.parameters() , lr = learning_rate , weight_decay = weight_decay) , Adam(classifier_1.parameters() , lr = learning_rate , weight_decay = weight_decay) , Adam(classifier_2.parameters() , lr = learning_rate , weight_decay = weight_decay))
